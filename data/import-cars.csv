@@ -1,0 +1,4 @@
+vin,year,make,model,trim,mileage,finalBid,auctionDate,location,primaryDamage,secondaryDamage,color,imageUrls
+BMW111,2020,BMW,M340i,xDrive,45210,12850,2026-04-10,"Chicago, IL",Front End,Mechanical,Blue,"https://placehold.co/800x500?text=BMW+Front|https://placehold.co/800x500?text=BMW+Rear|https://placehold.co/800x500?text=BMW+Damage"
+TOY222,2021,TOYOTA,CAMRY,SE,38100,10200,2026-04-09,"Dallas, TX",Rear End,None,White,"https://placehold.co/800x500?text=Toyota+Front|https://placehold.co/800x500?text=Toyota+Rear|https://placehold.co/800x500?text=Toyota+Damage"
+AUD333,2019,AUDI,A4,Premium,61500,9700,2026-04-08,"Miami, FL",Side,Minor Dent,Black,"https://placehold.co/800x500?text=Audi+Front|https://placehold.co/800x500?text=Audi+Side|https://placehold.co/800x500?text=Audi+Damage"

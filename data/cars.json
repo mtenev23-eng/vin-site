@@ -1,0 +1,101 @@
+[
+  {
+    "vin": "ABC123",
+    "year": 2020,
+    "make": "BMW",
+    "model": "M340I",
+    "trim": "xDrive",
+    "mileage": 45210,
+    "finalBid": 12850,
+    "auctionDate": "2026-04-10",
+    "location": "Chicago, IL",
+    "primaryDamage": "Front End",
+    "secondaryDamage": "Mechanical",
+    "color": "Blue"
+  },
+  {
+    "vin": "XYZ999",
+    "year": 2021,
+    "make": "TOYOTA",
+    "model": "CAMRY",
+    "trim": "SE",
+    "mileage": 38100,
+    "finalBid": 10200,
+    "auctionDate": "2026-04-09",
+    "location": "Dallas, TX",
+    "primaryDamage": "Rear End",
+    "secondaryDamage": "None",
+    "color": "White"
+  },
+  {
+    "vin": "TEST777",
+    "year": 2019,
+    "make": "AUDI",
+    "model": "A4",
+    "trim": "Premium",
+    "mileage": 61500,
+    "finalBid": 9700,
+    "auctionDate": "2026-04-08",
+    "location": "Miami, FL",
+    "primaryDamage": "Side",
+    "secondaryDamage": "Minor Dent",
+    "color": "Black"
+  },
+  {
+    "vin": "BMW111",
+    "year": 2020,
+    "make": "BMW",
+    "model": "M340i",
+    "trim": "xDrive",
+    "mileage": 45210,
+    "finalBid": 12850,
+    "auctionDate": "2026-04-10",
+    "location": "Chicago, IL",
+    "primaryDamage": "Front End",
+    "secondaryDamage": "Mechanical",
+    "color": "Blue",
+    "imageUrls": [
+      "https://placehold.co/800x500?text=BMW+Front",
+      "https://placehold.co/800x500?text=BMW+Rear",
+      "https://placehold.co/800x500?text=BMW+Damage"
+    ]
+  },
+  {
+    "vin": "TOY222",
+    "year": 2021,
+    "make": "TOYOTA",
+    "model": "CAMRY",
+    "trim": "SE",
+    "mileage": 38100,
+    "finalBid": 10200,
+    "auctionDate": "2026-04-09",
+    "location": "Dallas, TX",
+    "primaryDamage": "Rear End",
+    "secondaryDamage": "None",
+    "color": "White",
+    "imageUrls": [
+      "https://placehold.co/800x500?text=Toyota+Front",
+      "https://placehold.co/800x500?text=Toyota+Rear",
+      "https://placehold.co/800x500?text=Toyota+Damage"
+    ]
+  },
+  {
+    "vin": "AUD333",
+    "year": 2019,
+    "make": "AUDI",
+    "model": "A4",
+    "trim": "Premium",
+    "mileage": 61500,
+    "finalBid": 9700,
+    "auctionDate": "2026-04-08",
+    "location": "Miami, FL",
+    "primaryDamage": "Side",
+    "secondaryDamage": "Minor Dent",
+    "color": "Black",
+    "imageUrls": [
+      "https://placehold.co/800x500?text=Audi+Front",
+      "https://placehold.co/800x500?text=Audi+Side",
+      "https://placehold.co/800x500?text=Audi+Damage"
+    ]
+  }
+]

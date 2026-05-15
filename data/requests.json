@@ -1,0 +1,21 @@
+[
+  {
+    "id": 1776893971244,
+    "vin": "ABC123",
+    "name": "asd",
+    "contact": "dsf",
+    "requestType": "removal",
+    "message": "sdf",
+    "submittedAt": "2026-04-22T21:39:31.244Z"
+  },
+  {
+    "id": 1777154635200,
+    "vin": "ZAAA112",
+    "name": "qedqw",
+    "contact": "a",
+    "requestType": "correction",
+    "message": "dfd",
+    "status": "new",
+    "submittedAt": "2026-04-25T22:03:55.200Z"
+  }
+]
