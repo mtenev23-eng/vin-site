@@ -1,9 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 export default function RequestPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <RequestForm />
+    </Suspense>
+  );
+}
+
+function RequestForm() {
   const searchParams = useSearchParams();
   const vinFromUrl = searchParams.get("vin") || "";
 
