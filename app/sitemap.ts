@@ -1,33 +1,35 @@
-import fs from "fs/promises";
-import path from "path";
 import { MetadataRoute } from "next";
-
-const filePath = path.join(process.cwd(), "data", "cars.json");
-
-type Car = {
-  vin: string;
-};
-
-async function getCars(): Promise<Car[]> {
-  const file = await fs.readFile(filePath, "utf-8");
-  return JSON.parse(file);
-}
+import { supabase } from "../utils/supabase/client";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const cars = await getCars();
+  const { data: cars, error } = await supabase
+    .from("cars")
+    .select("vin");
 
-  const baseUrl = "http://localhost:3000";
+  if (error) {
+    console.error("Sitemap Supabase error:", error);
 
-  const vinPages = cars.map((car) => ({
-    url: `${baseUrl}/vin/${car.vin}`,
-    lastModified: new Date(),
-    changeFrequency: "weekly" as const,
-    priority: 0.8,
-  }));
+    return [
+      {
+        url: "https://salvagevinhistory.com",
+        lastModified: new Date(),
+        changeFrequency: "daily",
+        priority: 1,
+      },
+    ];
+  }
+
+  const vinPages =
+    cars?.map((car) => ({
+      url: `https://salvagevinhistory.com/vin/${car.vin}`,
+      lastModified: new Date(),
+      changeFrequency: "weekly" as const,
+      priority: 0.8,
+    })) || [];
 
   return [
     {
-      url: baseUrl,
+      url: "https://salvagevinhistory.com",
       lastModified: new Date(),
       changeFrequency: "daily",
       priority: 1,
