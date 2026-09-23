@@ -172,74 +172,7 @@ export default function Home() {
         background: "#ffffff",
       }}
     >
-      {/* HEADER */}
-
-      <header
-        style={{
-          borderBottom: "1px solid #e8e8e8",
-          background: "#ffffff",
-        }}
-      >
-        <div
-          style={{
-            maxWidth: "1200px",
-            margin: "0 auto",
-            padding: "20px 24px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
-          <strong
-            style={{
-              fontSize: "20px",
-            }}
-          >
-            Salvage VIN History
-          </strong>
-
-          <nav
-  style={{
-    display: "flex",
-    gap: "24px",
-    fontSize: "14px",
-  }}
->
-  <a
-    href="#recent-auctions"
-    style={{
-      color: "#171717",
-      textDecoration: "none",
-      cursor: "pointer",
-    }}
-  >
-    Recent Auctions
-  </a>
-
-  <a
-    href="#browse-makes"
-    style={{
-      color: "#171717",
-      textDecoration: "none",
-      cursor: "pointer",
-    }}
-  >
-    Browse Makes
-  </a>
-
-  <a
-    href="#faq"
-    style={{
-      color: "#171717",
-      textDecoration: "none",
-      cursor: "pointer",
-    }}
-  >
-    FAQ
-  </a>
-</nav>
-        </div>
-      </header>
+      
 
       {/* HERO */}
 
