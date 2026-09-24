@@ -248,11 +248,43 @@ Lot: ${lotNumber}`;
 
               <button
                 type="button"
-                onClick={() => {
-                  alert(
-                    "Crypto payment will be connected next."
-                  );
-                }}
+                onClick={async () => {
+  try {
+    const response = await fetch(
+      "/api/stripe/checkout",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          vin,
+          auctionSource,
+          lotNumber,
+        }),
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok || !data.url) {
+      throw new Error(
+        data.error || "Could not start checkout."
+      );
+    }
+
+    window.location.href = data.url;
+  } catch (error) {
+    console.error(
+      "Stripe checkout error:",
+      error
+    );
+
+    alert(
+      "Could not start payment. Please try again."
+    );
+  }
+}}
                 style={{
                   width: "100%",
                   padding: "15px 18px",
@@ -271,7 +303,7 @@ Lot: ${lotNumber}`;
                     marginBottom: "4px",
                   }}
                 >
-                  Pay Removal Fee — $39
+                  Pay by Card — $39
                 </strong>
 
                 <span
@@ -280,7 +312,7 @@ Lot: ${lotNumber}`;
                     fontSize: "13px",
                   }}
                 >
-                  Pay with crypto and submit your removal request.
+                  Pay securely by credit or debit card.
                 </span>
               </button>
             </div>
