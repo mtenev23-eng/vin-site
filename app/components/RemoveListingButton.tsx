@@ -325,9 +325,20 @@ Lot: ${lotNumber}`;
                 lineHeight: 1.5,
               }}
             >
-              Removal requests are reviewed before processing.
-              Submission or payment does not by itself guarantee
-              removal.
+              By proceeding with payment, you acknowledge the removal request terms described in our{" "}
+<a
+  href="/removal-policy"
+  target="_blank"
+  rel="noopener noreferrer"
+  style={{
+    color: "#111",
+    fontWeight: 700,
+    textDecoration: "underline",
+  }}
+>
+  Removal Policy
+</a>
+. Removal requests are reviewed before processing, and payment does not by itself guarantee removal.
             </p>
           </div>
         </div>
