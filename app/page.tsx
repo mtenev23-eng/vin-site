@@ -668,24 +668,66 @@ fontSize: "18px",
                       </div>
                     </div>
 
-                    {lot.primary_damage && (
-                      <div
-                        style={{
-                          borderTop:
-                            "1px solid #eeeeee",
-                          marginTop: "16px",
-                          paddingTop: "13px",
-                          fontSize: "13px",
-                          color: "#666",
-                        }}
-                      >
-                        Damage: {lot.primary_damage}
-                      </div>
-                    )}
+                    <div
+  style={{
+    borderTop: "1px solid #eeeeee",
+    marginTop: "16px",
+    paddingTop: "13px",
+    fontSize: "13px",
+    color: "#666",
+  }}
+>
+  <div>
+    VIN:{" "}
+    <span
+      onClick={(e) => {
+        e.stopPropagation();
+        router.push(`/vin/${lot.vin}`);
+      }}
+      style={{
+        color: "#171717",
+        fontWeight: "600",
+        textDecoration: "underline",
+        cursor: "pointer",
+      }}
+    >
+      {lot.vin}
+    </span>
+  </div>
+
+  {lot.primary_damage && (
+    <div style={{ marginTop: "6px" }}>
+      Damage: {lot.primary_damage}
+    </div>
+  )}
+</div>
                   </div>
                 </article>
               );
             })}
+          </div>
+
+          <div
+            style={{
+              marginTop: "30px",
+              textAlign: "center",
+            }}
+          >
+            <button
+              onClick={() => router.push("/recent-auctions")}
+              style={{
+                padding: "13px 22px",
+                background: "#171717",
+                color: "#ffffff",
+                border: "none",
+                borderRadius: "8px",
+                fontSize: "15px",
+                fontWeight: "bold",
+                cursor: "pointer",
+              }}
+            >
+              View All Auction Sales →
+            </button>
           </div>
         </div>
       </section>
