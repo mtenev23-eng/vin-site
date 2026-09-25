@@ -1,5 +1,37 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 
+export const metadata: Metadata = {
+  title: "Vehicle Auction History FAQ",
+
+  description:
+    "Learn how to research Copart and IAAI vehicle auction history by VIN or lot number, including sale prices, mileage, damage information, auction photos and historical records.",
+
+  alternates: {
+    canonical: "/faq",
+  },
+
+  robots: {
+    index: true,
+    follow: true,
+  },
+
+  openGraph: {
+    title: "Vehicle Auction History FAQ",
+    description:
+      "Learn how to research Copart and IAAI vehicle auction history by VIN or lot number, including sale prices, mileage, damage information, auction photos and historical records.",
+    url: "/faq",
+    type: "website",
+    siteName: "Salvage VIN History",
+  },
+
+  twitter: {
+    card: "summary",
+    title: "Vehicle Auction History FAQ",
+    description:
+      "Learn how to research Copart and IAAI vehicle auction history by VIN or lot number, including sale prices, mileage, damage information, auction photos and historical records.",
+  },
+};
 const faqs = [
   {
     question: "What is Salvage VIN History?",
