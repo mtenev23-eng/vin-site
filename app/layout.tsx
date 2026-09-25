@@ -15,12 +15,40 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://salvagevinhistory.com"),
+
   title: {
-    default: "Salvage VIN History",
+    default: "Salvage VIN History - Copart & IAAI Auction Records",
     template: "%s | Salvage VIN History",
   },
+
   description:
     "Search historical Copart and IAAI vehicle auction records by VIN or lot number. View archived auction photos, sale prices, mileage, damage information and vehicle history.",
+
+  alternates: {
+    canonical: "/",
+  },
+
+  robots: {
+    index: true,
+    follow: true,
+  },
+
+  openGraph: {
+    type: "website",
+    siteName: "Salvage VIN History",
+    title: "Salvage VIN History - Copart & IAAI Auction Records",
+    description:
+      "Search historical Copart and IAAI vehicle auction records by VIN or lot number. View archived auction photos, sale prices, mileage, damage information and vehicle history.",
+    url: "/",
+  },
+
+  twitter: {
+    card: "summary",
+    title: "Salvage VIN History - Copart & IAAI Auction Records",
+    description:
+      "Search historical Copart and IAAI vehicle auction records by VIN or lot number. View archived auction photos, sale prices, mileage, damage information and vehicle history.",
+  },
 };
 
 export default function RootLayout({
