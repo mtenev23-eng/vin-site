@@ -1,5 +1,37 @@
 import Link from "next/link";
 import Stripe from "stripe";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Removal Request",
+  description:
+    "Removal request payment confirmation for Salvage VIN History.",
+
+  robots: {
+    index: false,
+    follow: false,
+  },
+
+  alternates: {
+    canonical: "/removal-success",
+  },
+
+  openGraph: {
+    title: "Removal Request",
+    description:
+      "Removal request payment confirmation for Salvage VIN History.",
+    url: "/removal-success",
+    type: "website",
+    siteName: "Salvage VIN History",
+  },
+
+  twitter: {
+    card: "summary",
+    title: "Removal Request",
+    description:
+      "Removal request payment confirmation for Salvage VIN History.",
+  },
+};
 
 const stripe = new Stripe(
   process.env.STRIPE_SECRET_KEY as string

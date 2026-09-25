@@ -5,10 +5,7 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: "*",
       allow: "/",
-      disallow: [
-        "/api/",
-        "/removal-success",
-      ],
+      disallow: ["/api/"],
     },
     sitemap: "https://salvagevinhistory.com/sitemap.xml",
   };
