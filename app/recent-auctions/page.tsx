@@ -1,12 +1,57 @@
 import Link from "next/link";
 import { supabase } from "../../utils/supabase/client";
 
-export const metadata = {
-  title: "Recent Copart & IAAI Auction Sales",
-  description:
-    "Browse recently archived Copart and IAAI vehicle auction sales. View VINs, final bids, auction dates, damage information and historical auction records.",
-};
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>;
+}) {
+  const params = await searchParams;
 
+  const requestedPage = Number(params.page || "1");
+
+  const currentPage =
+    Number.isInteger(requestedPage) && requestedPage > 0
+      ? requestedPage
+      : 1;
+
+  const canonical =
+    currentPage === 1
+      ? "https://salvagevinhistory.com/recent-auctions"
+      : `https://salvagevinhistory.com/recent-auctions?page=${currentPage}`;
+
+  const title =
+    currentPage === 1
+      ? "Recent Copart & IAAI Auction Sales"
+      : `Recent Copart & IAAI Auction Sales - Page ${currentPage}`;
+
+  const description =
+    currentPage === 1
+      ? "Browse recently archived Copart and IAAI vehicle auction sales. View VINs, final bids, auction dates, damage information and historical auction records."
+      : `Browse page ${currentPage} of recently archived Copart and IAAI vehicle auction sales with VINs, final bids, auction dates, damage information and vehicle history.`;
+
+  return {
+    title,
+    description,
+
+    alternates: {
+      canonical,
+    },
+
+    robots: {
+      index: true,
+      follow: true,
+    },
+
+    openGraph: {
+      title,
+      description,
+      url: canonical,
+      type: "website",
+      siteName: "Salvage VIN History",
+    },
+  };
+}
 const PAGE_SIZE = 24;
 
 function formatPrice(price: number | null) {
