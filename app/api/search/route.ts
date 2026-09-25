@@ -4,17 +4,16 @@ import { supabase } from "../../../utils/supabase/client";
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
 
-  const query = searchParams
-    .get("q")
-    ?.trim()
-    .toUpperCase();
+  const rawQuery = searchParams.get("q")?.trim();
 
-  if (!query) {
+  if (!rawQuery) {
     return NextResponse.json(
-      { error: "Enter a VIN or lot number." },
+      { error: "Enter a VIN, lot number, make or model." },
       { status: 400 }
     );
   }
+
+  const query = rawQuery.toUpperCase();
 
   // ========================================
   // VIN SEARCH
@@ -82,7 +81,6 @@ export async function GET(request: Request) {
       );
     }
 
-    // Normally a lot number will have one result.
     if (data.length === 1) {
       const lot = data[0];
 
@@ -93,8 +91,6 @@ export async function GET(request: Request) {
       });
     }
 
-    // Protects us if Copart and IAAI ever use
-    // the same numeric lot number.
     return NextResponse.json({
       found: true,
       type: "multiple_lots",
@@ -106,10 +102,13 @@ export async function GET(request: Request) {
     });
   }
 
-  return NextResponse.json(
-    {
-      error: "Enter a valid 17-character VIN or auction lot number.",
-    },
-    { status: 400 }
-  );
+  // ========================================
+  // VEHICLE MAKE / MODEL SEARCH
+  // ========================================
+
+  return NextResponse.json({
+    found: true,
+    type: "vehicle_search",
+    url: `/vin?q=${encodeURIComponent(rawQuery)}`,
+  });
 }

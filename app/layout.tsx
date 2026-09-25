@@ -128,6 +128,16 @@ export default function RootLayout({
                 fontSize: "14px",
               }}
             >
+
+              <Link
+  href="/vin"
+  style={{
+    color: "#444",
+    textDecoration: "none",
+  }}
+>
+  VIN History
+</Link>
               <Link
                 href="/#recent-auctions"
                 style={{

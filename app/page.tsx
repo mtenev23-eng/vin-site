@@ -222,7 +222,7 @@ fontSize: "18px",
             }}
           >
             Search historical Copart and IAAI auction
-            records by VIN or auction lot number.
+records by VIN, lot number, make or model.
           </p>
 
           <form
@@ -242,7 +242,7 @@ fontSize: "18px",
           >
             <input
               type="text"
-              placeholder="Enter VIN or auction lot number"
+              placeholder="Enter VIN, lot number, make or model"
               value={query}
               onChange={(e) =>
                 setQuery(e.target.value)
@@ -341,7 +341,7 @@ fontSize: "18px",
               fontSize: "13px",
             }}
           >
-            Example: 1FTFW1ED2MFB20220 or 72413505
+            Example: Tesla Model 3, BMW M340i, 1FTFW1ED2MFB20220 or 72413505
           </div>
         </div>
       </section>
