@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
-
+import { sendRemovalNotification } from "@/lib/sendRemovalNotification";
 const stripe = new Stripe(
   process.env.STRIPE_SECRET_KEY as string
 );
@@ -73,12 +73,26 @@ export async function POST(request: Request) {
         );
 
       if (error) {
-        throw error;
-      }
+  throw error;
+}
 
-      console.log(
-        `Removal request saved: ${vin} / ${auctionSource} / ${lotNumber}`
-      );
+console.log(
+  `Removal request saved: ${vin} / ${auctionSource} / ${lotNumber}`
+);
+
+await sendRemovalNotification({
+  vin,
+  auctionSource,
+  lotNumber,
+  paymentMethod: "Stripe",
+  amount: session.amount_total
+    ? `$${(session.amount_total / 100).toFixed(2)}`
+    : "$39.00",
+  paymentId:
+    typeof session.payment_intent === "string"
+      ? session.payment_intent
+      : session.id,
+});
     }
 
     return NextResponse.json({

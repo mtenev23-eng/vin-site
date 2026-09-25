@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import crypto from "crypto";
+import { sendRemovalNotification } from "@/lib/sendRemovalNotification";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL as string,
@@ -205,13 +206,21 @@ export async function POST(request: Request) {
       );
 
     if (error) {
-      throw error;
-    }
+  throw error;
+}
 
-    console.log(
-      `Crypto removal request saved: ${vin} / ${auctionSource} / ${lotNumber}`
-    );
+console.log(
+  `Crypto removal request saved: ${vin} / ${auctionSource} / ${lotNumber}`
+);
 
+await sendRemovalNotification({
+  vin,
+  auctionSource,
+  lotNumber,
+  paymentMethod: "NOWPayments",
+  amount: "$39.00",
+  paymentId: String(payment_id),
+});
     return NextResponse.json({
       received: true,
     });
