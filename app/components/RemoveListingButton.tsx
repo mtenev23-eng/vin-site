@@ -315,6 +315,77 @@ Lot: ${lotNumber}`;
                   Pay securely by credit or debit card.
                 </span>
               </button>
+<button
+  type="button"
+  onClick={async () => {
+    try {
+      const response = await fetch(
+        "/api/nowpayments/checkout",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            vin,
+            auctionSource,
+            lotNumber,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok || !data.url) {
+        throw new Error(
+          data.error || "Could not start crypto checkout."
+        );
+      }
+
+      window.location.href = data.url;
+    } catch (error) {
+      console.error(
+        "NOWPayments checkout error:",
+        error
+      );
+
+      alert(
+        "Could not start crypto payment. Please try again."
+      );
+    }
+  }}
+  style={{
+    width: "100%",
+    padding: "15px 18px",
+    background: "#ffffff",
+    color: "#171717",
+    border: "1px solid #171717",
+    borderRadius: "8px",
+    textAlign: "left",
+    cursor: "pointer",
+  }}
+>
+  <strong
+    style={{
+      display: "block",
+      fontSize: "15px",
+      marginBottom: "4px",
+    }}
+  >
+    Pay with Crypto — $39
+  </strong>
+
+  <span
+    style={{
+      color: "#666",
+      fontSize: "13px",
+    }}
+  >
+    Pay securely with cryptocurrency.
+  </span>
+</button>
+
+
             </div>
 
             <p
