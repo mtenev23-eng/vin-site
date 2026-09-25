@@ -119,7 +119,53 @@ async function getMakeAuctions(makeSlug: string) {
     vehicle: vehicleMap.get(lot.vin) || null,
   }));
 }
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ make: string }>;
+}) {
+  const { make: makeSlug } = await params;
 
+  const databaseMake = formatMake(makeSlug);
+  const makeName = displayMake(databaseMake);
+
+  const canonical =
+    `https://salvagevinhistory.com/recent-auctions/${makeSlug.toLowerCase()}`;
+
+  const title =
+    `${makeName} Auction History - Copart & IAAI Sales`;
+
+  const description =
+    `Browse archived ${makeName} auction history from Copart and IAAI. View VINs, final bids, auction dates, damage information, photos and historical vehicle auction records.`;
+
+  return {
+    title,
+    description,
+
+    alternates: {
+      canonical,
+    },
+
+    robots: {
+      index: true,
+      follow: true,
+    },
+
+    openGraph: {
+      title,
+      description,
+      url: canonical,
+      type: "website",
+      siteName: "Salvage VIN History",
+    },
+
+    twitter: {
+      card: "summary",
+      title,
+      description,
+    },
+  };
+}
 export default async function MakePage({
   params,
 }: {
