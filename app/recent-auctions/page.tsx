@@ -165,6 +165,24 @@ export default async function RecentAuctionsPage({
     Math.ceil(totalRecords / PAGE_SIZE)
   );
 
+  const paginationPages = Array.from(
+  new Set([
+    1,
+    2,
+    3,
+    currentPage - 2,
+    currentPage - 1,
+    currentPage,
+    currentPage + 1,
+    currentPage + 2,
+    totalPages - 2,
+    totalPages - 1,
+    totalPages,
+  ])
+)
+  .filter((page) => page >= 1 && page <= totalPages)
+  .sort((a, b) => a - b);
+
   return (
     <main
       style={{
@@ -402,70 +420,120 @@ export default async function RecentAuctionsPage({
         </div>
 
         <div
-          style={{
-            marginTop: "40px",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            gap: "20px",
-            flexWrap: "wrap",
-          }}
-        >
-          {currentPage > 1 ? (
-            <Link
-              href={
-                currentPage === 2
-                  ? "/recent-auctions"
-                  : `/recent-auctions?page=${
-                      currentPage - 1
-                    }`
-              }
-              style={{
-                padding: "11px 18px",
-                border: "1px solid #ccc",
-                borderRadius: "8px",
-                background: "#ffffff",
-                color: "#171717",
-                textDecoration: "none",
-                fontWeight: "600",
-              }}
-            >
-              ← Previous
-            </Link>
-          ) : (
-            <span />
-          )}
+  style={{
+    marginTop: "40px",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: "8px",
+    flexWrap: "wrap",
+  }}
+>
+  {currentPage > 1 && (
+    <Link
+      href={
+        currentPage === 2
+          ? "/recent-auctions"
+          : `/recent-auctions?page=${currentPage - 1}`
+      }
+      style={{
+        padding: "10px 14px",
+        border: "1px solid #ccc",
+        borderRadius: "7px",
+        background: "#ffffff",
+        color: "#171717",
+        textDecoration: "none",
+        fontWeight: "600",
+        fontSize: "14px",
+      }}
+    >
+      ← Previous
+    </Link>
+  )}
 
+  {paginationPages.map((page, index) => {
+    const previousPage = paginationPages[index - 1];
+    const showEllipsis =
+      previousPage && page - previousPage > 1;
+
+    const href =
+      page === 1
+        ? "/recent-auctions"
+        : `/recent-auctions?page=${page}`;
+
+    return (
+      <span
+        key={page}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "8px",
+        }}
+      >
+        {showEllipsis && (
           <span
             style={{
-              fontSize: "14px",
-              color: "#666",
+              color: "#777",
+              padding: "0 3px",
             }}
           >
-            Page {currentPage} of {totalPages}
+            …
           </span>
+        )}
 
-          {currentPage < totalPages ? (
-            <Link
-              href={`/recent-auctions?page=${
-                currentPage + 1
-              }`}
-              style={{
-                padding: "11px 18px",
-                border: "1px solid #ccc",
-                borderRadius: "8px",
-                background: "#ffffff",
-                color: "#171717",
-                textDecoration: "none",
-                fontWeight: "600",
-              }}
-            >
-              Next →
-            </Link>
-          ) : (
-            <span />
-          )}
-        </div>
+        {page === currentPage ? (
+          <span
+            style={{
+              padding: "10px 14px",
+              border: "1px solid #171717",
+              borderRadius: "7px",
+              background: "#171717",
+              color: "#ffffff",
+              fontWeight: "700",
+              fontSize: "14px",
+            }}
+          >
+            {page}
+          </span>
+        ) : (
+          <Link
+            href={href}
+            style={{
+              padding: "10px 14px",
+              border: "1px solid #ccc",
+              borderRadius: "7px",
+              background: "#ffffff",
+              color: "#171717",
+              textDecoration: "none",
+              fontWeight: "600",
+              fontSize: "14px",
+            }}
+          >
+            {page}
+          </Link>
+        )}
+      </span>
+    );
+  })}
+
+  {currentPage < totalPages && (
+    <Link
+      href={`/recent-auctions?page=${currentPage + 1}`}
+      style={{
+        padding: "10px 14px",
+        border: "1px solid #ccc",
+        borderRadius: "7px",
+        background: "#ffffff",
+        color: "#171717",
+        textDecoration: "none",
+        fontWeight: "600",
+        fontSize: "14px",
+      }}
+    >
+      Next →
+    </Link>
+  )}
+</div>
       </section>
     </main>
   );
