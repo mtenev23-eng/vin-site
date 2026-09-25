@@ -112,12 +112,19 @@ export async function generateMetadata({
   params: Promise<{ vin: string }>;
 }) {
   const { vin } = await params;
-  const history = await getVehicleHistory(vin);
+  const cleanedVin = vin.trim().toUpperCase();
+  const history = await getVehicleHistory(cleanedVin);
+
+  const canonicalUrl = `https://salvagevinhistory.com/vin/${cleanedVin}`;
 
   if (!history) {
     return {
-      title: `VIN ${vin} - Vehicle History`,
-      description: `Vehicle auction history for VIN ${vin}.`,
+      title: `VIN ${cleanedVin} - Vehicle Auction History`,
+      description: `Search archived vehicle auction history for VIN ${cleanedVin}.`,
+      robots: {
+        index: false,
+        follow: true,
+      },
     };
   }
 
@@ -131,15 +138,59 @@ export async function generateMetadata({
     .filter(Boolean)
     .join(" ");
 
+  const title = `${vehicleName} Auction History - VIN ${vehicle.vin}`;
+
+  const description =
+    `${vehicleName} VIN ${vehicle.vin} auction history. ` +
+    `View ${lots.length} archived auction record${lots.length === 1 ? "" : "s"} ` +
+    `with sale price, mileage, damage details and auction photos.`;
+
+  const firstImage =
+    lots.find(
+      (lot) => lot.image_urls && lot.image_urls.length > 0
+    )?.image_urls?.[0] || undefined;
+
   return {
-    title: `${vehicle.vin} - ${vehicleName} Auction History`,
-    description: `${vehicleName} auction history with ${
-      lots.length
-    } auction record${
-      lots.length === 1 ? "" : "s"
-    }, including sale prices, mileage, damage and auction photos. VIN ${
-      vehicle.vin
-    }.`,
+    title,
+    description,
+
+    alternates: {
+      canonical: canonicalUrl,
+    },
+
+    robots: {
+      index: true,
+      follow: true,
+    },
+
+    openGraph: {
+      title,
+      description,
+      url: canonicalUrl,
+      type: "website",
+      siteName: "Salvage VIN History",
+      ...(firstImage
+        ? {
+            images: [
+              {
+                url: firstImage,
+                alt: `${vehicleName} auction history`,
+              },
+            ],
+          }
+        : {}),
+    },
+
+    twitter: {
+      card: firstImage ? "summary_large_image" : "summary",
+      title,
+      description,
+      ...(firstImage
+        ? {
+            images: [firstImage],
+          }
+        : {}),
+    },
   };
 }
 
