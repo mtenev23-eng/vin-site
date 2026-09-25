@@ -316,7 +316,52 @@ export default async function VinPage({
   );
 
   const latestLot = lots[0] || null;
+const auctionSources = Array.from(
+  new Set(
+    lots
+      .map((lot) => lot.auction_source)
+      .filter(Boolean)
+  )
+);
 
+const sourceText =
+  auctionSources.length === 0
+    ? "auction"
+    : auctionSources.length === 1
+      ? auctionSources[0]
+      : auctionSources.join(" and ");
+
+const auctionSummary = latestLot
+  ? `${vehicleName || "This vehicle"} has ${lots.length} archived auction ${
+      lots.length === 1 ? "record" : "records"
+    }${auctionSources.length > 0 ? ` from ${sourceText}` : ""}. ${
+      latestLot.auction_date
+        ? `The most recent archived appearance was on ${formatDate(
+            latestLot.auction_date
+          )}`
+        : "The most recent archived appearance"
+    }${
+      latestLot.location
+        ? ` in ${latestLot.location}`
+        : ""
+    }${
+      latestLot.mileage !== null
+        ? ` with ${formatMileage(latestLot.mileage)}`
+        : ""
+    }${
+      latestLot.primary_damage
+        ? ` and primary damage reported as ${latestLot.primary_damage}`
+        : ""
+    }${
+      latestLot.final_bid !== null
+        ? `. The archived record shows a final bid of ${formatBid(
+            latestLot.final_bid
+          )}`
+        : ""
+    }.`
+  : `${vehicleName || "This vehicle"} is archived under VIN ${
+      vehicle.vin
+    }, but no auction lot details are currently available.`;
   return (
     <main
       style={{
@@ -576,6 +621,37 @@ export default async function VinPage({
             </strong>
           </div>
         </section>
+{/* AUCTION HISTORY SUMMARY */}
+
+<section
+  style={{
+    marginBottom: "48px",
+    padding: "26px 28px",
+    background: "#f6f7f8",
+    border: "1px solid #e5e5e5",
+    borderRadius: "10px",
+  }}
+>
+  <h2
+    style={{
+      fontSize: "22px",
+      margin: "0 0 10px",
+    }}
+  >
+    Auction History Summary
+  </h2>
+
+  <p
+    style={{
+      margin: 0,
+      color: "#555",
+      fontSize: "15px",
+      lineHeight: 1.7,
+    }}
+  >
+    {auctionSummary}
+  </p>
+</section>
 
         {/* AUCTION HISTORY HEADING */}
 
