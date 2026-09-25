@@ -242,65 +242,117 @@ function display(
 
 
 export async function generateMetadata({
-
   params,
-
 }: {
-
   params: Promise<{
-
     source: string;
-
     lotNumber: string;
-
   }>;
-
 }) {
-
   const { source, lotNumber } = await params;
 
-  const record = await getLot(source, lotNumber);
+  const cleanedSource = source.trim().toLowerCase();
+  const cleanedLotNumber = lotNumber.trim();
 
+  const record = await getLot(cleanedSource, cleanedLotNumber);
 
+  const canonicalUrl =
+    `https://salvagevinhistory.com/lot/${cleanedSource}/${cleanedLotNumber}`;
 
   if (!record) {
-
     return {
-
-      title: `Auction Lot ${lotNumber}`,
-
-      description: `Vehicle auction record for lot ${lotNumber}.`,
-
+      title: `${source.toUpperCase()} Lot ${cleanedLotNumber} - Auction Record`,
+      description: `Archived vehicle auction record for ${source.toUpperCase()} lot ${cleanedLotNumber}.`,
+      robots: {
+        index: false,
+        follow: true,
+      },
     };
-
   }
-
-
 
   const { lot, vehicle } = record;
 
-
-
   const vehicleName = vehicle
-
     ? [vehicle.year, vehicle.make, vehicle.model]
-
         .filter(Boolean)
-
         .join(" ")
-
     : lot.vin;
 
+  const title =
+    `${vehicleName} - ${lot.auction_source} Lot ${lot.lot_number}`;
 
+  const descriptionParts = [
+    `${vehicleName} auction history for ${lot.auction_source} lot ${lot.lot_number}.`,
+    `VIN ${lot.vin}.`,
+  ];
+
+  if (lot.final_bid !== null) {
+    descriptionParts.push(
+      `Final bid ${formatBid(lot.final_bid)}.`
+    );
+  }
+
+  if (lot.mileage !== null) {
+    descriptionParts.push(
+      `Mileage ${formatMileage(lot.mileage)}.`
+    );
+  }
+
+  if (lot.primary_damage) {
+    descriptionParts.push(
+      `Primary damage: ${lot.primary_damage}.`
+    );
+  }
+
+  const description = descriptionParts.join(" ");
+
+  const firstImage =
+    lot.image_urls && lot.image_urls.length > 0
+      ? lot.image_urls[0]
+      : undefined;
 
   return {
+    title,
+    description,
 
-    title: `${vehicleName} - ${lot.auction_source} Lot ${lot.lot_number}`,
+    alternates: {
+      canonical: canonicalUrl,
+    },
 
-    description: `${vehicleName} auction record from ${lot.auction_source}. Lot ${lot.lot_number}, VIN ${lot.vin}, sale price, mileage, damage and auction photos.`,
+    robots: {
+      index: true,
+      follow: true,
+    },
 
+    openGraph: {
+      title,
+      description,
+      url: canonicalUrl,
+      type: "website",
+      siteName: "Salvage VIN History",
+      ...(firstImage
+        ? {
+            images: [
+              {
+                url: firstImage,
+                alt: `${vehicleName} ${lot.auction_source} lot ${lot.lot_number}`,
+              },
+            ],
+          }
+        : {}),
+    },
+
+    twitter: {
+      card: firstImage ? "summary_large_image" : "summary",
+      title,
+      description,
+      ...(firstImage
+        ? {
+            images: [firstImage],
+          }
+        : {}),
+    },
   };
-
 }
 
 
