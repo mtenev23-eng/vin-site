@@ -71,105 +71,38 @@ export default function RootLayout({
       >
         {/* GLOBAL HEADER */}
 
-        <header
-          style={{
-            background: "#ffffff",
-            borderBottom: "1px solid #e8e8e8",
-            position: "relative",
-            zIndex: 100,
-          }}
-        >
-          <div
-            style={{
-              maxWidth: "1200px",
-              margin: "0 auto",
-              padding: "14px 24px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: "24px",
-            }}
-          >
-            {/* LOGO */}
+<header className="site-header">
+  <div className="site-header-inner">
+    {/* LOGO */}
 
-            <Link
-              href="/"
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "11px",
-                color: "#171717",
-                textDecoration: "none",
-                flexShrink: 0,
-              }}
-            >
-              <Image
-  src="/logo.png"
-  alt="Salvage VIN History"
-  width={300}
-  height={60}
-  priority
-  style={{
-    width: "300px",
-    height: "auto",
-  }}
-/>
+    <Link href="/" className="site-logo-link">
+      <Image
+        src="/logo.png"
+        alt="Salvage VIN History"
+        width={300}
+        height={60}
+        priority
+        className="site-logo"
+      />
+    </Link>
 
-              
-            </Link>
+    {/* NAVIGATION */}
 
-            {/* NAVIGATION */}
+    <nav className="site-nav" aria-label="Main navigation">
+      <Link href="/vin">VIN History</Link>
 
-            <nav
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "26px",
-                fontSize: "14px",
-              }}
-            >
+      <Link href="/#recent-auctions">
+        Recent Auctions
+      </Link>
 
-              <Link
-  href="/vin"
-  style={{
-    color: "#444",
-    textDecoration: "none",
-  }}
->
-  VIN History
-</Link>
-              <Link
-                href="/#recent-auctions"
-                style={{
-                  color: "#444",
-                  textDecoration: "none",
-                }}
-              >
-                Recent Auctions
-              </Link>
+      <Link href="/#browse-makes">
+        Browse Makes
+      </Link>
 
-              <Link
-                href="/#browse-makes"
-                style={{
-                  color: "#444",
-                  textDecoration: "none",
-                }}
-              >
-                Browse Makes
-              </Link>
-
-              <Link
-                href="/faq"
-                style={{
-                  color: "#444",
-                  textDecoration: "none",
-                }}
-              >
-                FAQ
-              </Link>
-            </nav>
-          </div>
-        </header>
+      <Link href="/faq">FAQ</Link>
+    </nav>
+  </div>
+</header>
 
         {children}
       </body>
