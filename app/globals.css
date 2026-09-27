@@ -293,3 +293,59 @@ body {
     width: 100%;
   }
 }
+
+/* =========================
+   FAQ PAGE MOBILE
+   ========================= */
+
+@media (max-width: 700px) {
+  .faq-page-content {
+    padding: 38px 18px 60px !important;
+  }
+
+  .faq-page-title {
+    font-size: 32px !important;
+    line-height: 1.15 !important;
+  }
+}
+
+
+/* =========================
+   REQUEST PAGE MOBILE
+   ========================= */
+
+@media (max-width: 700px) {
+  .request-page {
+    padding: 24px 16px 50px !important;
+  }
+
+  .request-card {
+    padding: 24px 18px !important;
+    border-radius: 14px !important;
+  }
+
+  .request-title {
+    font-size: 30px !important;
+    line-height: 1.15 !important;
+  }
+}
+
+
+/* =========================
+   REMOVAL POLICY MOBILE
+   ========================= */
+
+@media (max-width: 700px) {
+  .removal-policy-content {
+    padding: 38px 18px 60px !important;
+  }
+
+  .removal-policy-title {
+    font-size: 32px !important;
+    line-height: 1.15 !important;
+  }
+
+  .removal-policy-box {
+    padding: 20px 18px !important;
+  }
+}

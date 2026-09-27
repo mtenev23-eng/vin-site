@@ -1,4 +1,4 @@
-import Link from "next/link";
+
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -105,58 +105,18 @@ export default function FAQPage() {
         background: "#ffffff",
       }}
     >
-      {/* HEADER */}
-
-      <header
-        style={{
-          borderBottom: "1px solid #e8e8e8",
-          background: "#ffffff",
-        }}
-      >
-        <div
-          style={{
-            maxWidth: "1200px",
-            margin: "0 auto",
-            padding: "20px 24px",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
-          <Link
-            href="/"
-            style={{
-              color: "#171717",
-              textDecoration: "none",
-              fontWeight: "bold",
-              fontSize: "20px",
-            }}
-          >
-            Salvage VIN History
-          </Link>
-
-          <Link
-            href="/"
-            style={{
-              color: "#555",
-              textDecoration: "none",
-              fontSize: "14px",
-            }}
-          >
-            ← Back to search
-          </Link>
-        </div>
-      </header>
+     
 
       {/* FAQ */}
 
       <section
-        style={{
-          maxWidth: "900px",
-          margin: "0 auto",
-          padding: "65px 24px 90px",
-        }}
-      >
+  className="faq-page-content"
+  style={{
+    maxWidth: "900px",
+    margin: "0 auto",
+    padding: "65px 24px 90px",
+  }}
+>
         <div
           style={{
             marginBottom: "42px",
@@ -175,12 +135,13 @@ export default function FAQPage() {
             Help & Vehicle Research
           </div>
 
-          <h1
-            style={{
-              fontSize: "42px",
-              margin: "0 0 14px",
-            }}
-          >
+         <h1
+  className="faq-page-title"
+  style={{
+    fontSize: "42px",
+    margin: "0 0 14px",
+  }}
+>
             Frequently Asked Questions
           </h1>
 

@@ -67,16 +67,18 @@ function RequestForm() {
 
   return (
     <main
-      style={{
-        minHeight: "100vh",
+  className="request-page"
+  style={{
+    minHeight: "100vh",
         backgroundColor: "#f8f9fb",
         padding: "40px",
         fontFamily: "Arial, sans-serif",
       }}
     >
       <div
-        style={{
-          maxWidth: "800px",
+  className="request-card"
+  style={{
+    maxWidth: "800px",
           margin: "0 auto",
           backgroundColor: "white",
           padding: "32px",
@@ -84,7 +86,10 @@ function RequestForm() {
           boxShadow: "0 8px 24px rgba(0,0,0,0.06)",
         }}
       >
-        <h1 style={{ fontSize: "36px", marginTop: 0, marginBottom: "12px" }}>
+        <h1
+  className="request-title"
+  style={{ fontSize: "36px", marginTop: 0, marginBottom: "12px" }}
+>
           Request Correction or Removal
         </h1>
 
@@ -105,6 +110,7 @@ function RequestForm() {
               placeholder="Enter VIN"
               style={{
                 width: "100%",
+                boxSizing: "border-box",
                 padding: "14px",
                 borderRadius: "10px",
                 border: "1px solid #ccc",
@@ -124,6 +130,7 @@ function RequestForm() {
               placeholder="Enter your name"
               style={{
                 width: "100%",
+                boxSizing: "border-box",
                 padding: "14px",
                 borderRadius: "10px",
                 border: "1px solid #ccc",
@@ -143,6 +150,7 @@ function RequestForm() {
               placeholder="Email, phone, or Viber"
               style={{
                 width: "100%",
+                boxSizing: "border-box",
                 padding: "14px",
                 borderRadius: "10px",
                 border: "1px solid #ccc",
@@ -160,6 +168,7 @@ function RequestForm() {
               onChange={(e) => setRequestType(e.target.value)}
               style={{
                 width: "100%",
+                boxSizing: "border-box",
                 padding: "14px",
                 borderRadius: "10px",
                 border: "1px solid #ccc",
@@ -183,6 +192,7 @@ function RequestForm() {
               rows={6}
               style={{
                 width: "100%",
+                boxSizing: "border-box",
                 padding: "14px",
                 borderRadius: "10px",
                 border: "1px solid #ccc",

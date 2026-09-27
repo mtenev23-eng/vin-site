@@ -68,12 +68,13 @@ export default function RemovalPolicyPage() {
       }}
     >
       <div
-        style={{
-          maxWidth: "850px",
-          margin: "0 auto",
-          padding: "70px 24px 100px",
-        }}
-      >
+  className="removal-policy-content"
+  style={{
+    maxWidth: "850px",
+    margin: "0 auto",
+    padding: "70px 24px 100px",
+  }}
+>
         {/* PAGE INTRO */}
 
         <div
@@ -96,8 +97,9 @@ export default function RemovalPolicyPage() {
           </div>
 
           <h1
-            style={{
-              fontSize: "42px",
+  className="removal-policy-title"
+  style={{
+    fontSize: "42px",
               margin: "0 0 12px",
             }}
           >
@@ -134,8 +136,9 @@ export default function RemovalPolicyPage() {
           <h2 style={headingStyle}>Removal Request Fee</h2>
 
           <div
-            style={{
-              background: "#f7f7f7",
+  className="removal-policy-box"
+  style={{
+    background: "#f7f7f7",
               border: "1px solid #e5e5e5",
               borderRadius: "8px",
               padding: "22px 24px",
@@ -250,9 +253,10 @@ export default function RemovalPolicyPage() {
         {/* CONTACT */}
 
         <section
-          style={{
-            ...sectionStyle,
-            background: "#f7f7f7",
+  className="removal-policy-box"
+  style={{
+    ...sectionStyle,
+    background: "#f7f7f7",
             borderRadius: "8px",
             padding: "26px",
           }}
