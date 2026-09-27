@@ -746,19 +746,13 @@ export default async function LotPage({
       >
 
         <div
-
-          style={{
-
-            maxWidth: "1200px",
-
-            margin: "0 auto",
-
-            padding: "45px 24px 42px",
-
-          }}
-
-        >
-
+  className="lot-hero-inner"
+  style={{
+    maxWidth: "1200px",
+    margin: "0 auto",
+    padding: "45px 24px 42px",
+  }}
+>
           <div
 
             style={{
@@ -829,11 +823,10 @@ export default async function LotPage({
 
 
 
-          <h1
-
-            style={{
-
-              fontSize: "42px",
+         <h1
+  className="lot-vehicle-title"
+  style={{
+    fontSize: "42px",
 
               lineHeight: 1.12,
 
@@ -989,10 +982,9 @@ export default async function LotPage({
 
 
       <div
-
-        style={{
-
-          maxWidth: "1200px",
+  className="lot-page-content"
+  style={{
+    maxWidth: "1200px",
 
           margin: "0 auto",
 
@@ -1006,11 +998,10 @@ export default async function LotPage({
 
 
 
-        <section
-
-          style={{
-
-            display: "grid",
+       <section
+  className="lot-stats-grid"
+  style={{
+    display: "grid",
 
             gridTemplateColumns:
 
@@ -1374,11 +1365,10 @@ export default async function LotPage({
 
             {lot.image_urls.length > 1 && (
 
-              <div
-
-                style={{
-
-                  display: "grid",
+             <div
+  className="lot-photo-grid"
+  style={{
+    display: "grid",
 
                   gridTemplateColumns:
 
@@ -1540,11 +1530,10 @@ export default async function LotPage({
 
             {details.map(([label, value], index) => (
 
-              <div
-
-                key={String(label)}
-
-                style={{
+             <div
+  key={String(label)}
+  className="lot-detail-row"
+  style={{
 
                   display: "grid",
 
