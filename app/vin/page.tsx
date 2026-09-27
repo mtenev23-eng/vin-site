@@ -293,13 +293,14 @@ const buildPageUrl = (page: number) => {
           borderBottom: "1px solid #e8e8e8",
         }}
       >
-        <div
-          style={{
-            maxWidth: "1200px",
-            margin: "0 auto",
-            padding: "55px 24px 50px",
-          }}
-        >
+       <div
+  className="vin-archive-hero"
+  style={{
+    maxWidth: "1200px",
+    margin: "0 auto",
+    padding: "55px 24px 50px",
+  }}
+>
           <div
             style={{
               fontSize: "13px",
@@ -314,7 +315,8 @@ const buildPageUrl = (page: number) => {
           </div>
 
           <h1
-            style={{
+  className="vin-archive-title"
+  style={{
               fontSize: "42px",
               lineHeight: 1.1,
               margin: "0 0 14px",
@@ -341,13 +343,14 @@ const buildPageUrl = (page: number) => {
         </div>
       </section>
 
-            <div
-        style={{
-          maxWidth: "1200px",
-          margin: "0 auto",
-          padding: "38px 24px 80px",
-        }}
-      >
+           <div
+  className="vin-archive-content"
+  style={{
+    maxWidth: "1200px",
+    margin: "0 auto",
+    padding: "38px 24px 80px",
+  }}
+>
         {/* SEARCH */}
 
         <form
@@ -358,12 +361,13 @@ const buildPageUrl = (page: number) => {
           }}
         >
           <div
-            style={{
-              display: "flex",
-              gap: "10px",
-              maxWidth: "760px",
-            }}
-          >
+  className="vin-archive-search-row"
+  style={{
+    display: "flex",
+    gap: "10px",
+    maxWidth: "760px",
+  }}
+>
             <input
               type="text"
               name="q"
@@ -474,14 +478,15 @@ const buildPageUrl = (page: number) => {
 
         {/* VEHICLE CARDS */}
 
-        <section
-          style={{
-            display: "grid",
-            gridTemplateColumns:
-              "repeat(auto-fit, minmax(280px, 1fr))",
-            gap: "18px",
-          }}
-        >
+       <section
+  className="vin-archive-grid"
+  style={{
+    display: "grid",
+    gridTemplateColumns:
+      "repeat(auto-fit, minmax(280px, 1fr))",
+    gap: "18px",
+  }}
+>
           {archiveItems.map(({ vehicle, lots }) => {
             const latestLot = lots[0] || null;
 
