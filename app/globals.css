@@ -133,3 +133,35 @@ body {
     object-fit: cover;
   }
 }
+
+
+/* =========================
+   VIN PAGE MOBILE
+   ========================= */
+
+@media (max-width: 700px) {
+  .vin-hero-inner {
+    padding: 32px 18px 30px !important;
+  }
+
+  .vin-page-content {
+    padding: 26px 18px 60px !important;
+  }
+
+  .vin-vehicle-title {
+    font-size: 32px !important;
+    line-height: 1.15 !important;
+    overflow-wrap: anywhere;
+  }
+
+  .vin-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+    margin-bottom: 34px !important;
+  }
+
+  .vin-summary-grid > div {
+    padding: 16px !important;
+    min-width: 0;
+  }
+}

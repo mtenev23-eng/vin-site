@@ -424,7 +424,8 @@ const auctionSummary = latestLot
         }}
       >
         <div
-          style={{
+  className="vin-hero-inner"
+  style={{
             maxWidth: "1200px",
             margin: "0 auto",
             padding: "48px 24px 44px",
@@ -444,8 +445,9 @@ const auctionSummary = latestLot
           </div>
 
           <h1
-            style={{
-              fontSize: "42px",
+  className="vin-vehicle-title"
+  style={{
+    fontSize: "42px",
               lineHeight: 1.12,
               margin: "0 0 12px",
               letterSpacing: "-0.5px",
@@ -491,22 +493,24 @@ const auctionSummary = latestLot
       </section>
 
       <div
-        style={{
-          maxWidth: "1200px",
-          margin: "0 auto",
-          padding: "34px 24px 80px",
-        }}
-      >
+  className="vin-page-content"
+  style={{
+    maxWidth: "1200px",
+    margin: "0 auto",
+    padding: "34px 24px 80px",
+  }}
+>
         {/* SUMMARY */}
 
-        <section
-          style={{
-            display: "grid",
-            gridTemplateColumns:
-              "repeat(auto-fit, minmax(180px, 1fr))",
-            gap: "14px",
-            marginBottom: "48px",
-          }}
+       <section
+  className="vin-summary-grid"
+  style={{
+    display: "grid",
+    gridTemplateColumns:
+      "repeat(auto-fit, minmax(180px, 1fr))",
+    gap: "14px",
+    marginBottom: "48px",
+  }}
         >
           <div
             style={{
