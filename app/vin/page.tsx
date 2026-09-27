@@ -4,6 +4,23 @@ import { supabase } from "../../utils/supabase/client";
 
 const PAGE_SIZE = 24;
 
+const SITE_URL = "https://salvagevinhistory.com";
+
+type VinArchivePageProps = {
+  searchParams: Promise<{
+    page?: string;
+    q?: string;
+  }>;
+};
+
+function getPageNumber(value?: string) {
+  const requestedPage = Number(value || "1");
+
+  return Number.isFinite(requestedPage) && requestedPage > 0
+    ? Math.floor(requestedPage)
+    : 1;
+}
+
 type Vehicle = {
   vin: string;
   year: number | null;
@@ -53,56 +70,57 @@ function formatBid(value: number | null) {
 
 export async function generateMetadata({
   searchParams,
-}: {
-  searchParams: Promise<{
-  page?: string;
-  q?: string;
-}>;
-}): Promise<Metadata> {
+}: VinArchivePageProps): Promise<Metadata> {
   const params = await searchParams;
+  const page = getPageNumber(params.page);
+  const searchQuery = params.q?.trim() || "";
 
-  const requestedPage = Number(params.page || "1");
-  const currentPage =
-    Number.isFinite(requestedPage) && requestedPage > 0
-      ? Math.floor(requestedPage)
-      : 1;
+  if (searchQuery) {
+    return {
+      title: `Search Results for ${searchQuery}`,
+      description: `Search Salvage VIN History for archived Copart and IAAI auction records matching ${searchQuery}.`,
+      alternates: {
+        canonical: `${SITE_URL}/vin`,
+      },
+      robots: {
+        index: false,
+        follow: true,
+      },
+    };
+  }
 
-  const canonicalUrl =
-    currentPage === 1
-      ? "https://salvagevinhistory.com/vin"
-      : `https://salvagevinhistory.com/vin?page=${currentPage}`;
+  const canonical =
+    page === 1
+      ? `${SITE_URL}/vin`
+      : `${SITE_URL}/vin?page=${page}`;
 
   const title =
-    currentPage === 1
-      ? "Browse Vehicle VIN Auction History"
-      : `Browse Vehicle VIN Auction History - Page ${currentPage}`;
+    page === 1
+      ? "VIN History Archive | Copart & IAAI Vehicle Records"
+      : `VIN History Archive – Page ${page} | Copart & IAAI Records`;
 
   const description =
-    currentPage === 1
-      ? "Browse archived vehicle auction history by VIN. View historical Copart and IAAI auction records, photos, sale prices, mileage and damage information."
-      : `Browse archived vehicle auction history by VIN on page ${currentPage}. View historical Copart and IAAI auction records, photos, sale prices, mileage and damage information.`;
+    page === 1
+      ? "Browse archived vehicle history records from Copart and IAAI. View VIN details, auction dates, final bids, mileage, damage, photos and past auction appearances."
+      : `Browse page ${page} of the Salvage VIN History archive with historical Copart and IAAI vehicle records, auction results, mileage, damage and VIN details.`;
 
   return {
     title,
     description,
-
     alternates: {
-      canonical: canonicalUrl,
+      canonical,
     },
-
     robots: {
       index: true,
       follow: true,
     },
-
     openGraph: {
       title,
       description,
-      url: canonicalUrl,
-      type: "website",
+      url: canonical,
       siteName: "Salvage VIN History",
+      type: "website",
     },
-
     twitter: {
       card: "summary",
       title,
@@ -323,13 +341,76 @@ const buildPageUrl = (page: number) => {
         </div>
       </section>
 
-      <div
+            <div
         style={{
           maxWidth: "1200px",
           margin: "0 auto",
           padding: "38px 24px 80px",
         }}
       >
+        {/* SEARCH */}
+
+        <form
+          action="/vin"
+          method="GET"
+          style={{
+            marginBottom: "34px",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              gap: "10px",
+              maxWidth: "760px",
+            }}
+          >
+            <input
+              type="text"
+              name="q"
+              defaultValue={searchQuery}
+              placeholder="Search by make, model, year or trim"
+              aria-label="Search vehicle history archive"
+              style={{
+                flex: 1,
+                minWidth: 0,
+                padding: "14px 16px",
+                border: "1px solid #cccccc",
+                borderRadius: "7px",
+                fontSize: "15px",
+                color: "#171717",
+                background: "#ffffff",
+              }}
+            />
+
+            <button
+              type="submit"
+              style={{
+                padding: "14px 22px",
+                border: "none",
+                borderRadius: "7px",
+                background: "#171717",
+                color: "#ffffff",
+                fontSize: "14px",
+                fontWeight: "bold",
+                cursor: "pointer",
+                whiteSpace: "nowrap",
+              }}
+            >
+              Search
+            </button>
+          </div>
+
+          <div
+            style={{
+              marginTop: "9px",
+              color: "#777",
+              fontSize: "13px",
+            }}
+          >
+            Example: Tesla Model 3, BMW M340i or 2024 Ford
+          </div>
+        </form>
+
         {/* RESULT COUNT */}
 
         <div
@@ -344,13 +425,15 @@ const buildPageUrl = (page: number) => {
         >
           <div>
             <h2
-              style={{
-                fontSize: "26px",
-                margin: "0 0 5px",
-              }}
-            >
-              Vehicle History Archive
-            </h2>
+  style={{
+    fontSize: "26px",
+    margin: "0 0 5px",
+  }}
+>
+  {searchQuery
+    ? `Results for “${searchQuery}”`
+    : "Vehicle History Archive"}
+</h2>
 
             <div
               style={{
@@ -358,7 +441,24 @@ const buildPageUrl = (page: number) => {
                 fontSize: "14px",
               }}
             >
-              {totalVehicles.toLocaleString()} archived vehicles
+         {totalVehicles.toLocaleString()} archived{" "}
+{totalVehicles === 1 ? "vehicle" : "vehicles"}
+
+{searchQuery && (
+  <>
+    {" · "}
+    <Link
+      href="/vin"
+      style={{
+        color: "#171717",
+        fontWeight: "bold",
+        textDecoration: "none",
+      }}
+    >
+      Clear search
+    </Link>
+  </>
+)}
             </div>
           </div>
 
