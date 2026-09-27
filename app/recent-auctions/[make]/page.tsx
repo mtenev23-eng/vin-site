@@ -213,13 +213,14 @@ export default async function MakePage({
         </div>
       </header>
 
-      <div
-        style={{
-          maxWidth: "1200px",
-          margin: "0 auto",
-          padding: "60px 24px 90px",
-        }}
-      >
+     <div
+  className="recent-auctions-content"
+  style={{
+    maxWidth: "1200px",
+    margin: "0 auto",
+    padding: "60px 24px 90px",
+  }}
+>
         <div style={{ marginBottom: "36px" }}>
           <div
             style={{
@@ -234,9 +235,10 @@ export default async function MakePage({
             Browse Auction History
           </div>
 
-          <h1
-            style={{
-              fontSize: "42px",
+        <h1
+  className="recent-auctions-title"
+  style={{
+    fontSize: "42px",
               margin: "0 0 12px",
             }}
           >
@@ -269,13 +271,14 @@ export default async function MakePage({
           </div>
         ) : (
           <div
-            style={{
-              display: "grid",
-              gridTemplateColumns:
-                "repeat(auto-fit, minmax(250px, 1fr))",
-              gap: "20px",
-            }}
-          >
+  className="recent-auctions-grid"
+  style={{
+    display: "grid",
+    gridTemplateColumns:
+      "repeat(auto-fit, minmax(250px, 1fr))",
+    gap: "20px",
+  }}
+>
             {auctions.map((lot) => {
               const vehicle = lot.vehicle;
 
@@ -299,9 +302,10 @@ export default async function MakePage({
                     textDecoration: "none",
                   }}
                 >
-                  <article
-                    style={{
-                      background: "#ffffff",
+                 <article
+  className="recent-auction-card"
+  style={{
+    background: "#ffffff",
                       border: "1px solid #e1e1e1",
                       borderRadius: "12px",
                       overflow: "hidden",

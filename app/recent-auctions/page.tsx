@@ -193,12 +193,13 @@ export default async function RecentAuctionsPage({
       }}
     >
       <section
-        style={{
-          maxWidth: "1200px",
-          margin: "0 auto",
-          padding: "48px 24px 70px",
-        }}
-      >
+  className="recent-auctions-content"
+  style={{
+    maxWidth: "1200px",
+    margin: "0 auto",
+    padding: "48px 24px 70px",
+  }}
+>
         <div style={{ marginBottom: "30px" }}>
           <div
             style={{
@@ -214,8 +215,9 @@ export default async function RecentAuctionsPage({
           </div>
 
           <h1
-            style={{
-              fontSize: "38px",
+  className="recent-auctions-title"
+  style={{
+    fontSize: "38px",
               margin: "0 0 10px",
             }}
           >
@@ -237,13 +239,14 @@ export default async function RecentAuctionsPage({
         </div>
 
         <div
-          style={{
-            display: "grid",
-            gridTemplateColumns:
-              "repeat(auto-fit, minmax(250px, 1fr))",
-            gap: "20px",
-          }}
-        >
+  className="recent-auctions-grid"
+  style={{
+    display: "grid",
+    gridTemplateColumns:
+      "repeat(auto-fit, minmax(250px, 1fr))",
+    gap: "20px",
+  }}
+>
           {(lots || []).map((lot) => {
             const vehicle = vehicleMap.get(lot.vin);
 
@@ -259,8 +262,9 @@ export default async function RecentAuctionsPage({
 
             return (
               <article
-                key={`${lot.auction_source}-${lot.lot_number}`}
-                style={{
+  key={`${lot.auction_source}-${lot.lot_number}`}
+  className="recent-auction-card"
+  style={{
                   background: "#ffffff",
                   border: "1px solid #e1e1e1",
                   borderRadius: "12px",
