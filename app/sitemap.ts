@@ -81,16 +81,29 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ];
 
-  const makes = [
-    "bmw",
-    "mercedes-benz",
-    "audi",
-    "ford",
-    "toyota",
-    "tesla",
-    "lexus",
-    "hyundai",
-  ];
+ const makes = [
+  "toyota",
+  "ford",
+  "honda",
+  "hyundai",
+  "bmw",
+  "chevrolet",
+  "tesla",
+  "jeep",
+  "mercedes-benz",
+  "nissan",
+  "lexus",
+  "kia",
+  "audi",
+  "dodge",
+  "volkswagen",
+  "mazda",
+  "land-rover",
+  "volvo",
+  "mitsubishi",
+  "buick",
+  "chrysler",
+];
 
   const makePages: MetadataRoute.Sitemap = makes.map((make) => ({
     url: `${BASE_URL}/recent-auctions/${make}`,
@@ -98,6 +111,23 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     changeFrequency: "daily",
     priority: 0.7,
   }));
+const vehicleMakePages: MetadataRoute.Sitemap = makes.map(
+  (make) => ({
+    url: `${BASE_URL}/vehicles/${make}`,
+    lastModified: new Date(),
+    changeFrequency: "daily",
+    priority: 0.8,
+  })
+);
+
+const vehicleModelPages: MetadataRoute.Sitemap = [
+  {
+    url: `${BASE_URL}/vehicles/bmw/m4`,
+    lastModified: new Date(),
+    changeFrequency: "daily",
+    priority: 0.8,
+  },
+];
 
   const vinPages: MetadataRoute.Sitemap = vehicles
     .filter((vehicle) => vehicle.vin)
@@ -129,9 +159,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }));
 
   return [
-    ...staticPages,
-    ...makePages,
-    ...vinPages,
-    ...lotPages,
-  ];
+  ...staticPages,
+  ...makePages,
+  ...vehicleMakePages,
+  ...vehicleModelPages,
+  ...vinPages,
+  ...lotPages,
+];
 }

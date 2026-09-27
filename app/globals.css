@@ -349,3 +349,80 @@ body {
     padding: 20px 18px !important;
   }
 }
+
+/* VEHICLE MAKE + MODEL PAGES MOBILE */
+@media (max-width: 700px) {
+  .vehicle-make-hero > div,
+  .vehicle-model-hero > div {
+    padding: 32px 18px 30px !important;
+  }
+
+  .vehicle-make-title,
+  .vehicle-model-title {
+    font-size: 32px !important;
+    line-height: 1.15 !important;
+    overflow-wrap: anywhere;
+  }
+
+  .vehicle-make-content,
+  .vehicle-model-content {
+    padding: 28px 18px 60px !important;
+  }
+
+  .vehicle-make-model-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  .vehicle-model-stats {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+    margin-bottom: 34px !important;
+  }
+
+  .vehicle-model-stats > div {
+    min-width: 0;
+    padding: 18px !important;
+  }
+
+  .vehicle-model-grid {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+
+  .vehicle-model-card {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .vehicle-model-card h3,
+  .vehicle-model-card strong,
+  .vehicle-model-card a,
+  .vehicle-model-card div {
+    overflow-wrap: anywhere;
+  }
+}
+
+
+@media (max-width: 700px) {
+  .vehicle-make-archive-grid {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+
+  .vehicle-make-archive-card {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .vehicle-make-archive-card h3,
+  .vehicle-make-archive-card strong,
+  .vehicle-make-archive-card a,
+  .vehicle-make-archive-card div {
+    overflow-wrap: anywhere;
+  }
+
+  .vehicle-make-filter-list {
+    gap: 8px !important;
+  }
+}

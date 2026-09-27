@@ -415,11 +415,9 @@ records by VIN, lot number, make or model.
             {makes.map((make) => (
               <button
                 key={make.slug}
-                onClick={() =>
-                  router.push(
-                    `/recent-auctions/${make.slug}`
-                  )
-                }
+               onClick={() =>
+  router.push(`/vehicles/${make.slug}`)
+}
                 style={{
                   padding: "9px 14px",
                   background: "#ffffff",
