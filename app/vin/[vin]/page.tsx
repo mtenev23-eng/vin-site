@@ -712,17 +712,9 @@ const auctionSummary = latestLot
 
               return (
                 <article
-                  key={`${lot.auction_source}-${lot.lot_number}`}
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns:
-                      "minmax(280px, 380px) 1fr",
-                    border: "1px solid #dedede",
-                    borderRadius: "12px",
-                    overflow: "hidden",
-                    background: "#fff",
-                  }}
-                >
+  key={`${lot.auction_source}-${lot.lot_number}`}
+  className="vin-auction-card"
+>
                   {/* PHOTO */}
 
                   <Link
