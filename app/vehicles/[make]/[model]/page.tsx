@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { cache } from "react";
 
 import { supabase } from "../../../../utils/supabase/client";
 
@@ -28,23 +29,168 @@ type AuctionWithVehicle = AuctionLot & {
   vehicle: Vehicle | null;
 };
 
-const SUPPORTED_MODELS: Record<
+const MIN_MODEL_VEHICLES = 5;
+const MODEL_BATCH_SIZE = 1000;
+
+const SUPPORTED_MAKES: Record<
   string,
   {
-    make: string;
-    model: string;
-    makeName: string;
-    modelName: string;
+    databaseMake: string;
+    displayName: string;
   }
 > = {
-  "bmw/m4": {
-    make: "BMW",
-    model: "M4",
-    makeName: "BMW",
-    modelName: "M4",
+  toyota: { databaseMake: "TOYOTA", displayName: "Toyota" },
+  ford: { databaseMake: "FORD", displayName: "Ford" },
+  honda: { databaseMake: "HONDA", displayName: "Honda" },
+  hyundai: { databaseMake: "HYUNDAI", displayName: "Hyundai" },
+  bmw: { databaseMake: "BMW", displayName: "BMW" },
+  chevrolet: {
+    databaseMake: "CHEVROLET",
+    displayName: "Chevrolet",
+  },
+  tesla: { databaseMake: "TESLA", displayName: "Tesla" },
+  jeep: { databaseMake: "JEEP", displayName: "Jeep" },
+  "mercedes-benz": {
+    databaseMake: "MERCEDES-BENZ",
+    displayName: "Mercedes-Benz",
+  },
+  nissan: { databaseMake: "NISSAN", displayName: "Nissan" },
+  lexus: { databaseMake: "LEXUS", displayName: "Lexus" },
+  kia: { databaseMake: "KIA", displayName: "Kia" },
+  audi: { databaseMake: "AUDI", displayName: "Audi" },
+  dodge: { databaseMake: "DODGE", displayName: "Dodge" },
+  volkswagen: {
+    databaseMake: "VOLKSWAGEN",
+    displayName: "Volkswagen",
+  },
+  mazda: { databaseMake: "MAZDA", displayName: "Mazda" },
+  "land-rover": {
+    databaseMake: "LAND ROVER",
+    displayName: "Land Rover",
+  },
+  volvo: { databaseMake: "VOLVO", displayName: "Volvo" },
+  mitsubishi: {
+    databaseMake: "MITSUBISHI",
+    displayName: "Mitsubishi",
+  },
+  buick: { databaseMake: "BUICK", displayName: "Buick" },
+  chrysler: {
+    databaseMake: "CHRYSLER",
+    displayName: "Chrysler",
   },
 };
 
+const MODEL_DISPLAY_NAMES: Record<string, string> = {
+  "2ER": "2 Series",
+  "3ER": "3 Series",
+  "4ER": "4 Series",
+  "5ER": "5 Series",
+  "6ER": "6 Series",
+  "7ER": "7 Series",
+  "8ER": "8 Series",
+
+  "A-KLASSE": "A-Class",
+  "C-KLASSE": "C-Class",
+  "CLA-KLASSE": "CLA-Class",
+  "CLS-KLASSE": "CLS-Class",
+  "E-KLASSE": "E-Class",
+  "G-KLASSE": "G-Class",
+  "GLA-KLASSE": "GLA-Class",
+  "S-KLASSE": "S-Class",
+  "SL-KLASSE": "SL-Class",
+};
+
+function displayModel(model: string) {
+  return MODEL_DISPLAY_NAMES[model.toUpperCase()] || model;
+}
+
+function slugifyModel(model: string) {
+  return displayModel(model)
+    .toLowerCase()
+    .trim()
+    .replace(/&/g, "and")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+const getModelsForMake = cache(async (databaseMake: string) => {
+  const models: string[] = [];
+
+  let from = 0;
+
+  while (true) {
+    const { data, error } = await supabase
+      .from("vehicles")
+      .select("model")
+      .eq("make", databaseMake)
+      .not("model", "is", null)
+      .range(from, from + MODEL_BATCH_SIZE - 1);
+
+    if (error) {
+      console.error("Model lookup error:", error);
+      return [];
+    }
+
+    if (!data || data.length === 0) {
+      break;
+    }
+
+    for (const row of data) {
+      if (row.model) {
+        models.push(row.model);
+      }
+    }
+
+    if (data.length < MODEL_BATCH_SIZE) {
+      break;
+    }
+
+    from += MODEL_BATCH_SIZE;
+  }
+
+  return models;
+});
+
+const getModelConfig = cache(
+  async (makeSlug: string, modelSlug: string) => {
+    const normalizedMakeSlug = makeSlug.toLowerCase();
+    const normalizedModelSlug = modelSlug.toLowerCase();
+
+    const makeConfig = SUPPORTED_MAKES[normalizedMakeSlug];
+
+    if (!makeConfig) {
+      return null;
+    }
+
+    const models = await getModelsForMake(makeConfig.databaseMake);
+
+    const modelCounts = new Map<string, number>();
+
+    for (const model of models) {
+      modelCounts.set(model, (modelCounts.get(model) || 0) + 1);
+    }
+
+    const matchingModel = Array.from(modelCounts.entries()).find(
+      ([databaseModel, count]) =>
+        count >= MIN_MODEL_VEHICLES &&
+        slugifyModel(databaseModel) === normalizedModelSlug
+    );
+
+    if (!matchingModel) {
+      return null;
+    }
+
+    const [databaseModel, vehicleCount] = matchingModel;
+
+    return {
+      make: makeConfig.databaseMake,
+      model: databaseModel,
+      makeName: makeConfig.displayName,
+      modelName: displayModel(databaseModel),
+      vehicleCount,
+    };
+  }
+);
 function formatPrice(price: number | null) {
   if (price === null) return "Price unavailable";
 
@@ -67,11 +213,7 @@ function formatMileage(mileage: number | null) {
   return `${mileage.toLocaleString()} mi`;
 }
 
-function getModelConfig(makeSlug: string, modelSlug: string) {
-  return SUPPORTED_MODELS[
-    `${makeSlug.toLowerCase()}/${modelSlug.toLowerCase()}`
-  ];
-}
+
 
 async function getModelData(make: string, model: string) {
   const {
@@ -176,7 +318,7 @@ export async function generateMetadata({
 }) {
   const { make: makeSlug, model: modelSlug } = await params;
 
-  const config = getModelConfig(makeSlug, modelSlug);
+  const config = await getModelConfig(makeSlug, modelSlug);
 
   if (!config) {
     return {
@@ -236,7 +378,7 @@ export default async function VehicleModelPage({
 }) {
   const { make: makeSlug, model: modelSlug } = await params;
 
-  const config = getModelConfig(makeSlug, modelSlug);
+  const config = await getModelConfig(makeSlug, modelSlug);
 
   if (!config) {
     notFound();

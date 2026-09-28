@@ -127,7 +127,7 @@ const SUPPORTED_MAKES: Record<
     displayName: "Chrysler",
   },
 };
-const LIVE_MODEL_PAGES = new Set(["bmw/m4"]);
+
 
 function slugifyModel(model: string) {
   return model
@@ -545,45 +545,37 @@ export default async function VehicleMakePage({
           padding: "38px 24px 80px",
         }}
       >
-        <section
-          style={{
-            background: "#ffffff",
-            border: "1px solid #e1e1e1",
-            borderRadius: "12px",
-            padding: "22px",
-            marginBottom: "42px",
-          }}
-        >
-          <div
-            style={{
-              color: "#777777",
-              fontSize: "12px",
-              textTransform: "uppercase",
-              fontWeight: "bold",
-              marginBottom: "8px",
-            }}
-          >
-            {selectedModel
-              ? `Archived ${config.displayName} ${displayModel(
-                  selectedModel
-                )} Vehicles`
-              : `Archived ${config.displayName} Vehicles`}
-          </div>
-
-          <strong style={{ fontSize: "28px" }}>
-            {totalCount.toLocaleString()}
-          </strong>
-        </section>
+        
 
         <section style={{ marginBottom: "46px" }}>
-          <h2
-            style={{
-              fontSize: "28px",
-              margin: "0 0 10px",
-            }}
-          >
-            Browse {config.displayName} Models
-          </h2>
+         <div
+  style={{
+    display: "flex",
+    alignItems: "baseline",
+    gap: "14px",
+    flexWrap: "wrap",
+    marginBottom: "10px",
+  }}
+>
+  <h2
+    style={{
+      fontSize: "28px",
+      margin: 0,
+    }}
+  >
+    Browse {config.displayName} Models
+  </h2>
+
+  <span
+    style={{
+      fontSize: "14px",
+      color: "#666666",
+      fontWeight: 600,
+    }}
+  >
+    {totalCount.toLocaleString()} archived vehicles
+  </span>
+</div>
 
           <p
             style={{
@@ -620,17 +612,24 @@ export default async function VehicleMakePage({
               All {config.displayName}
             </Link>
 
-            {models.map((item) => {
-              const active = selectedModel === item.model;
+           {models.map((item) => {
+  const active = selectedModel === item.model;
+  const hasDedicatedPage = item.vehicleCount >= 5;
 
-              return (
-                <Link
-                  key={item.model}
-                  href={makeArchiveUrl(
-                    normalizedMakeSlug,
-                    1,
-                    item.model
-                  )}
+  const modelUrl = hasDedicatedPage
+    ? `/vehicles/${normalizedMakeSlug}/${slugifyModel(
+        displayModel(item.model)
+      )}`
+    : makeArchiveUrl(
+        normalizedMakeSlug,
+        1,
+        item.model
+      );
+
+  return (
+    <Link
+      key={item.model}
+      href={modelUrl}
                   style={{
                     padding: "10px 14px",
                     borderRadius: "8px",
@@ -649,31 +648,7 @@ export default async function VehicleMakePage({
             })}
           </div>
 
-          {selectedModel &&
-            LIVE_MODEL_PAGES.has(
-              `${normalizedMakeSlug}/${slugifyModel(selectedModel)}`
-            ) && (
-              <div
-                style={{
-                  marginTop: "18px",
-                }}
-              >
-                <Link
-                  href={`/vehicles/${normalizedMakeSlug}/${slugifyModel(
-                    selectedModel
-                  )}`}
-                  style={{
-                    color: "#171717",
-                    fontWeight: "bold",
-                    fontSize: "14px",
-                  }}
-                >
-                  Explore {config.displayName}{" "}
-                  {displayModel(selectedModel)} prices & detailed auction
-                  history →
-                </Link>
-              </div>
-            )}
+          
         </section>
 
         <section style={{ marginBottom: "48px" }}>

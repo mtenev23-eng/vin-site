@@ -3,7 +3,68 @@ import { supabase } from "../utils/supabase/client";
 
 const BASE_URL = "https://salvagevinhistory.com";
 const BATCH_SIZE = 1000;
+const MIN_MODEL_VEHICLES = 5;
 
+const MAKE_SLUGS: Record<string, string> = {
+  TOYOTA: "toyota",
+  FORD: "ford",
+  HONDA: "honda",
+  HYUNDAI: "hyundai",
+  BMW: "bmw",
+  CHEVROLET: "chevrolet",
+  TESLA: "tesla",
+  JEEP: "jeep",
+  "MERCEDES-BENZ": "mercedes-benz",
+  NISSAN: "nissan",
+  LEXUS: "lexus",
+  KIA: "kia",
+  AUDI: "audi",
+  DODGE: "dodge",
+  VOLKSWAGEN: "volkswagen",
+  MAZDA: "mazda",
+  "LAND ROVER": "land-rover",
+  VOLVO: "volvo",
+  MITSUBISHI: "mitsubishi",
+  BUICK: "buick",
+  CHRYSLER: "chrysler",
+};
+
+function displayModel(model: string) {
+  const mappings: Record<string, string> = {
+    "2ER": "2 Series",
+    "3ER": "3 Series",
+    "4ER": "4 Series",
+    "5ER": "5 Series",
+    "6ER": "6 Series",
+    "7ER": "7 Series",
+    "8ER": "8 Series",
+
+    "A-KLASSE": "A-Class",
+    "B-KLASSE": "B-Class",
+    "C-KLASSE": "C-Class",
+    "E-KLASSE": "E-Class",
+    "G-KLASSE": "G-Class",
+    "S-KLASSE": "S-Class",
+    "CLA-KLASSE": "CLA-Class",
+    "CLS-KLASSE": "CLS-Class",
+    "GLA-KLASSE": "GLA-Class",
+    "GLB-KLASSE": "GLB-Class",
+    "GLC-KLASSE": "GLC-Class",
+    "GLE-KLASSE": "GLE-Class",
+    "GLS-KLASSE": "GLS-Class",
+    "SL-KLASSE": "SL-Class",
+  };
+
+  return mappings[model.toUpperCase()] || model;
+}
+
+function slugifyModel(model: string) {
+  return model
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
 async function fetchAllRows(
   table: string,
   columns: string
@@ -40,7 +101,7 @@ async function fetchAllRows(
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [vehicles, lots] = await Promise.all([
-    fetchAllRows("vehicles", "vin, created_at"),
+    fetchAllRows("vehicles", "vin, make, model, created_at"),
     fetchAllRows(
       "auction_lots",
       "auction_source, lot_number, created_at"
@@ -120,14 +181,64 @@ const vehicleMakePages: MetadataRoute.Sitemap = makes.map(
   })
 );
 
-const vehicleModelPages: MetadataRoute.Sitemap = [
+const modelCounts = new Map<
+  string,
   {
-    url: `${BASE_URL}/vehicles/bmw/m4`,
-    lastModified: new Date(),
-    changeFrequency: "daily",
+    make: string;
+    model: string;
+    count: number;
+    lastModified: Date;
+  }
+>();
+
+for (const vehicle of vehicles) {
+  if (!vehicle.make || !vehicle.model) {
+    continue;
+  }
+
+  const make = String(vehicle.make).toUpperCase();
+  const model = String(vehicle.model).trim();
+  const makeSlug = MAKE_SLUGS[make];
+
+  if (!makeSlug || !model) {
+    continue;
+  }
+
+  const key = `${make}|${model.toUpperCase()}`;
+  const createdAt = vehicle.created_at
+    ? new Date(vehicle.created_at)
+    : new Date();
+
+  const existing = modelCounts.get(key);
+
+  if (existing) {
+    existing.count += 1;
+
+    if (createdAt > existing.lastModified) {
+      existing.lastModified = createdAt;
+    }
+  } else {
+    modelCounts.set(key, {
+      make,
+      model,
+      count: 1,
+      lastModified: createdAt,
+    });
+  }
+}
+
+const vehicleModelPages: MetadataRoute.Sitemap = Array.from(
+  modelCounts.values()
+)
+  .filter((item) => item.count >= MIN_MODEL_VEHICLES)
+  .map((item) => ({
+    url: `${BASE_URL}/vehicles/${MAKE_SLUGS[item.make]}/${slugifyModel(
+      displayModel(item.model)
+    )}`,
+    lastModified: item.lastModified,
+    changeFrequency: "daily" as const,
     priority: 0.8,
-  },
-];
+  }));
 
   const vinPages: MetadataRoute.Sitemap = vehicles
     .filter((vehicle) => vehicle.vin)
