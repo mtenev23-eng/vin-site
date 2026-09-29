@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { supabase } from "../../../utils/supabase/client";
+import VinPhotoGallery from "./VinPhotoGallery";
 
 type Vehicle = {
   vin: string;
@@ -25,6 +26,17 @@ type AuctionLot = {
   transmission: string | null;
   drivetrain: string | null;
   fuel: string | null;
+
+  loss_type: string | null;
+  start_code: string | null;
+  keys_present: boolean | null;
+  seller: string | null;
+  seller_type: string | null;
+  sale_document: string | null;
+  body_style: string | null;
+  acv: number | null;
+  estimated_repair_cost: number | null;
+
   image_urls: string[] | null;
   source_url: string | null;
 };
@@ -457,38 +469,50 @@ const auctionSummary = latestLot
           </h1>
 
           {vehicle.trim && (
-            <div
-              style={{
-                fontSize: "17px",
-                color: "#555",
-                marginBottom: "16px",
-              }}
-            >
-              {vehicle.trim}
-            </div>
-          )}
+  <div
+    style={{
+      fontSize: "21px",
+      fontWeight: "600",
+      color: "#3f3f3f",
+      marginBottom: "22px",
+    }}
+  >
+    {vehicle.trim}
+  </div>
+)}
 
           <div
-            style={{
-              display: "flex",
-              flexWrap: "wrap",
-              alignItems: "center",
-              gap: "10px",
-              fontSize: "15px",
-              color: "#555",
-            }}
-          >
-            <span>VIN</span>
+  style={{
+    display: "flex",
+    alignItems: "baseline",
+    flexWrap: "wrap",
+    gap: "12px",
+  }}
+>
+  <span
+    style={{
+      fontSize: "12px",
+      fontWeight: "700",
+      textTransform: "uppercase",
+      letterSpacing: "1px",
+      color: "#777",
+    }}
+  >
+    VIN
+  </span>
 
-            <strong
-              style={{
-                color: "#171717",
-                letterSpacing: "0.3px",
-              }}
-            >
-              {vehicle.vin}
-            </strong>
-          </div>
+  <strong
+    style={{
+      fontSize: "22px",
+      lineHeight: 1.2,
+      color: "#111",
+      letterSpacing: "1px",
+      fontFamily: "monospace",
+    }}
+  >
+    {vehicle.vin}
+  </strong>
+</div>
         </div>
       </section>
 
@@ -501,546 +525,879 @@ const auctionSummary = latestLot
   }}
 >
         {/* SUMMARY */}
-
-       <section
-  className="vin-summary-grid"
+{latestLot && (
+  <section
+    className="vin-latest-showcase"
+    style={{
+      display: "grid",
+      gridTemplateColumns: "minmax(0, 1.55fr) minmax(320px, 0.85fr)",
+      border: "1px solid #e2e2e2",
+      borderRadius: "14px",
+      overflow: "hidden",
+      background: "#fff",
+      marginBottom: "20px",
+    }}
+  >
+   {/* LARGE VEHICLE PHOTO */}
+<div
   style={{
-    display: "grid",
-    gridTemplateColumns:
-      "repeat(auto-fit, minmax(180px, 1fr))",
-    gap: "14px",
-    marginBottom: "48px",
+    position: "relative",
+    background: "#f1f1f1",
+    alignSelf: "start",
+    width: "100%",
   }}
+>
+  <VinPhotoGallery
+    images={latestLot.image_urls || []}
+    vehicleName={vehicleName || vehicle.vin}
+  />
+</div>
+
+    {/* LATEST AUCTION SNAPSHOT */}
+    <div
+      style={{
+        padding: "30px",
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      <div
+        style={{
+          fontSize: "11px",
+          fontWeight: "700",
+          textTransform: "uppercase",
+          letterSpacing: "1px",
+          color: "#777",
+          marginBottom: "8px",
+        }}
+      >
+        Latest Auction Record
+      </div>
+
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          flexWrap: "wrap",
+          gap: "8px",
+          marginBottom: "24px",
+        }}
+      >
+        <span
+          style={{
+            background: "#171717",
+            color: "#fff",
+            padding: "7px 10px",
+            borderRadius: "6px",
+            fontSize: "12px",
+            fontWeight: "700",
+            letterSpacing: "0.6px",
+            textTransform: "uppercase",
+          }}
         >
+          {latestLot.auction_source}
+        </span>
+
+        <span
+          style={{
+            color: "#666",
+            fontSize: "13px",
+          }}
+        >
+          Lot #{latestLot.lot_number}
+        </span>
+      </div>
+
+      <div
+        style={{
+          marginBottom: "26px",
+        }}
+      >
+        <div
+          style={{
+            fontSize: "12px",
+            color: "#777",
+            textTransform: "uppercase",
+            letterSpacing: "0.6px",
+            marginBottom: "6px",
+          }}
+        >
+          Final Bid
+        </div>
+
+        <strong
+          style={{
+            display: "block",
+            fontSize: "38px",
+            lineHeight: 1,
+            letterSpacing: "-1px",
+          }}
+        >
+          {formatBid(latestLot.final_bid)}
+        </strong>
+      </div>
+
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: "20px 24px",
+          marginBottom: "28px",
+        }}
+      >
+        <div>
           <div
             style={{
-              padding: "20px 22px",
-              border: "1px solid #e2e2e2",
-              borderRadius: "10px",
-              background: "#fff",
+              fontSize: "11px",
+              color: "#777",
+              textTransform: "uppercase",
+              letterSpacing: "0.5px",
+              marginBottom: "5px",
             }}
           >
-            <div
-              style={{
-                fontSize: "12px",
-                color: "#777",
-                textTransform: "uppercase",
-                letterSpacing: "0.7px",
-                marginBottom: "7px",
-              }}
-            >
-              Auction Records
-            </div>
-
-            <strong style={{ fontSize: "25px" }}>
-              {lots.length}
-            </strong>
+            Auction Date
           </div>
 
-          <div
+          <strong
             style={{
-              padding: "20px 22px",
-              border: "1px solid #e2e2e2",
-              borderRadius: "10px",
-              background: "#fff",
+              fontSize: "14px",
             }}
           >
-            <div
-              style={{
-                fontSize: "12px",
-                color: "#777",
-                textTransform: "uppercase",
-                letterSpacing: "0.7px",
-                marginBottom: "7px",
-              }}
-            >
-              Archived Photos
-            </div>
+            {formatDate(latestLot.auction_date)}
+          </strong>
+        </div>
 
-            <strong style={{ fontSize: "25px" }}>
-              {totalPhotos}
-            </strong>
+        <div>
+          <div
+            style={{
+              fontSize: "11px",
+              color: "#777",
+              textTransform: "uppercase",
+              letterSpacing: "0.5px",
+              marginBottom: "5px",
+            }}
+          >
+            Mileage
           </div>
 
-          <div
+          <strong
             style={{
-              padding: "20px 22px",
-              border: "1px solid #e2e2e2",
-              borderRadius: "10px",
-              background: "#fff",
+              fontSize: "14px",
             }}
           >
+            {formatMileage(latestLot.mileage)}
+          </strong>
+        </div>
+
+        {latestLot.primary_damage && (
+          <div>
             <div
               style={{
-                fontSize: "12px",
+                fontSize: "11px",
                 color: "#777",
                 textTransform: "uppercase",
-                letterSpacing: "0.7px",
-                marginBottom: "7px",
+                letterSpacing: "0.5px",
+                marginBottom: "5px",
               }}
             >
-              Latest Auction
+              Primary Damage
             </div>
 
             <strong
               style={{
-                fontSize: "17px",
-                lineHeight: 1.4,
+                fontSize: "14px",
               }}
             >
-              {latestLot
-                ? formatDate(latestLot.auction_date)
-                : "Not available"}
+              {latestLot.primary_damage}
             </strong>
           </div>
+        )}
 
-          <div
-            style={{
-              padding: "20px 22px",
-              border: "1px solid #e2e2e2",
-              borderRadius: "10px",
-              background: "#fff",
-            }}
-          >
+        {latestLot.location && (
+          <div>
             <div
               style={{
-                fontSize: "12px",
+                fontSize: "11px",
                 color: "#777",
                 textTransform: "uppercase",
-                letterSpacing: "0.7px",
-                marginBottom: "7px",
+                letterSpacing: "0.5px",
+                marginBottom: "5px",
               }}
             >
-              Latest Sale
+              Location
             </div>
 
             <strong
               style={{
-                fontSize: "25px",
+                fontSize: "14px",
               }}
             >
-              {latestLot
-                ? formatBid(latestLot.final_bid)
-                : "N/A"}
+              {latestLot.location}
             </strong>
           </div>
-        </section>
-{/* AUCTION HISTORY SUMMARY */}
+        )}
+
+        {latestLot.start_code && (
+          <div>
+            <div
+              style={{
+                fontSize: "11px",
+                color: "#777",
+                textTransform: "uppercase",
+                letterSpacing: "0.5px",
+                marginBottom: "5px",
+              }}
+            >
+              Start Code
+            </div>
+
+            <strong
+              style={{
+                fontSize: "14px",
+              }}
+            >
+              {latestLot.start_code}
+            </strong>
+          </div>
+        )}
+
+        {latestLot.keys_present !== null && (
+          <div>
+            <div
+              style={{
+                fontSize: "11px",
+                color: "#777",
+                textTransform: "uppercase",
+                letterSpacing: "0.5px",
+                marginBottom: "5px",
+              }}
+            >
+              Keys
+            </div>
+
+            <strong
+              style={{
+                fontSize: "14px",
+              }}
+            >
+              {latestLot.keys_present
+                ? "Present"
+                : "Not reported as present"}
+            </strong>
+          </div>
+        )}
+      </div>
+
+      <Link
+        href={`/lot/${latestLot.auction_source.toLowerCase()}/${latestLot.lot_number}`}
+        style={{
+          display: "block",
+          marginTop: "auto",
+          padding: "13px 16px",
+          background: "#171717",
+          color: "#fff",
+          textDecoration: "none",
+          textAlign: "center",
+          borderRadius: "7px",
+          fontSize: "14px",
+          fontWeight: "700",
+        }}
+      >
+        View full auction record →
+      </Link>
+    </div>
+  </section>
+)}
+       
+
+      {/* AUCTION HISTORY */}
 
 <section
   style={{
-    marginBottom: "48px",
-    padding: "26px 28px",
-    background: "#f6f7f8",
-    border: "1px solid #e5e5e5",
-    borderRadius: "10px",
+    marginTop: "42px",
   }}
 >
-  <h2
+  <div
     style={{
-      fontSize: "22px",
-      margin: "0 0 10px",
+      marginBottom: "22px",
     }}
   >
-    Auction History Summary
-  </h2>
+    <h2
+      style={{
+        fontSize: "29px",
+        margin: "0 0 8px",
+      }}
+    >
+      Auction History
+    </h2>
 
-  <p
-    style={{
-      margin: 0,
-      color: "#555",
-      fontSize: "15px",
-      lineHeight: 1.7,
-    }}
-  >
-    {auctionSummary}
-  </p>
-</section>
+    <p
+      style={{
+        color: "#666",
+        fontSize: "15px",
+        lineHeight: 1.6,
+        margin: 0,
+      }}
+    >
+      {lots.length === 1
+        ? `1 archived auction appearance associated with VIN ${vehicle.vin}.`
+        : `${lots.length} archived auction appearances associated with VIN ${vehicle.vin}.`}
+    </p>
+  </div>
 
-        {/* AUCTION HISTORY HEADING */}
+  {lots.length === 0 ? (
+    <div
+      style={{
+        padding: "24px",
+        border: "1px solid #e2e2e2",
+        borderRadius: "10px",
+      }}
+    >
+      No auction lots are currently archived for this vehicle.
+    </div>
+  ) : (
+    <div
+      style={{
+        border: "1px solid #e2e2e2",
+        borderRadius: "12px",
+        overflow: "hidden",
+        background: "#fff",
+      }}
+    >
+      {lots.map((lot, index) => {
+        const source = lot.auction_source.toLowerCase();
 
-        <section>
+        const lotUrl =
+          `/lot/${source}/${lot.lot_number}`;
+
+        return (
           <div
-            style={{
-              marginBottom: "22px",
+  key={`${lot.auction_source}-${lot.lot_number}`}
+  className="vin-history-row"
+  style={{
+              display: "grid",
+              gridTemplateColumns:
+                "140px minmax(0, 1fr) auto",
+              alignItems: "center",
+              gap: "24px",
+              padding: "22px 24px",
+              borderBottom:
+                index < lots.length - 1
+                  ? "1px solid #e8e8e8"
+                  : "none",
             }}
           >
-            <h2
-              style={{
-                fontSize: "29px",
-                margin: "0 0 8px",
-              }}
-            >
-              Auction History
-            </h2>
+            {/* DATE */}
+            <div>
+              <div
+                style={{
+                  fontSize: "11px",
+                  color: "#777",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.6px",
+                  marginBottom: "5px",
+                }}
+              >
+                Auction Date
+              </div>
 
-            <p
-              style={{
-                color: "#666",
-                fontSize: "15px",
-                lineHeight: 1.6,
-                margin: 0,
-              }}
-            >
-              Archived auction appearances associated
-              with VIN {vehicle.vin}.
-            </p>
-          </div>
+              <strong
+                style={{
+                  fontSize: "14px",
+                  lineHeight: 1.4,
+                }}
+              >
+                {formatDate(lot.auction_date)}
+              </strong>
+            </div>
 
-          {lots.length === 0 && (
+            {/* AUCTION RECORD */}
             <div
               style={{
-                padding: "24px",
-                border: "1px solid #e2e2e2",
-                borderRadius: "10px",
+                minWidth: 0,
               }}
             >
-              No auction lots are currently archived for
-              this vehicle.
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  flexWrap: "wrap",
+                  gap: "8px",
+                  marginBottom: "9px",
+                }}
+              >
+                <span
+                  style={{
+                    display: "inline-block",
+                    background: "#171717",
+                    color: "#fff",
+                    padding: "5px 8px",
+                    borderRadius: "5px",
+                    fontSize: "11px",
+                    fontWeight: "700",
+                    letterSpacing: "0.6px",
+                    textTransform: "uppercase",
+                  }}
+                >
+                  {lot.auction_source}
+                </span>
+
+                <strong
+                  style={{
+                    fontSize: "15px",
+                  }}
+                >
+                  Lot #{lot.lot_number}
+                </strong>
+              </div>
+
+              <div
+                style={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: "8px 18px",
+                  color: "#555",
+                  fontSize: "14px",
+                  lineHeight: 1.5,
+                }}
+              >
+                {lot.final_bid !== null && (
+                  <span>
+                    <strong style={{ color: "#171717" }}>
+                      {formatBid(lot.final_bid)}
+                    </strong>
+                  </span>
+                )}
+
+                {lot.mileage !== null && (
+                  <span>
+                    {formatMileage(lot.mileage)}
+                  </span>
+                )}
+
+                {lot.primary_damage && (
+                  <span>
+                    {lot.primary_damage}
+                  </span>
+                )}
+
+                {lot.location && (
+                  <span>
+                    {lot.location}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* LINK */}
+            <Link
+              href={lotUrl}
+              style={{
+                color: "#171717",
+                textDecoration: "none",
+                fontSize: "14px",
+                fontWeight: "700",
+                whiteSpace: "nowrap",
+              }}
+            >
+              View record →
+            </Link>
+          </div>
+        );
+      })}
+    </div>
+  )}
+</section>
+
+        {/* VEHICLE & AUCTION DETAILS */}
+
+{latestLot && (
+  <section
+    style={{
+      marginTop: "48px",
+      borderTop: "1px solid #e5e5e5",
+      paddingTop: "34px",
+    }}
+  >
+    <div
+      style={{
+        marginBottom: "22px",
+      }}
+    >
+      <h2
+        style={{
+          margin: "0 0 7px",
+          fontSize: "26px",
+        }}
+      >
+        Vehicle & Auction Details
+      </h2>
+
+      <p
+        style={{
+          margin: 0,
+          color: "#666",
+          fontSize: "14px",
+          lineHeight: 1.6,
+        }}
+      >
+        Details reported for the most recent archived auction record.
+      </p>
+    </div>
+
+    {/* VEHICLE DETAILS */}
+    {(latestLot.body_style ||
+  latestLot.color ||
+      latestLot.engine ||
+      latestLot.transmission ||
+      latestLot.drivetrain ||
+      latestLot.fuel) && (
+      <div
+        style={{
+          marginBottom: "28px",
+        }}
+      >
+        <h3
+          style={{
+            margin: "0 0 14px",
+            fontSize: "17px",
+          }}
+        >
+          Vehicle
+        </h3>
+
+        <div
+        className="vin-details-grid"
+          style={{
+            display: "grid",
+            gridTemplateColumns:
+  "repeat(auto-fit, minmax(150px, 1fr))",
+            border: "1px solid #e2e2e2",
+            borderRadius: "10px",
+            overflow: "hidden",
+            background: "#fff",
+          }}
+        >
+         
+
+          {latestLot.body_style && (
+            <div style={{ padding: "18px 20px" }}>
+              <div
+                style={{
+                  color: "#777",
+                  fontSize: "11px",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.5px",
+                  marginBottom: "5px",
+                }}
+              >
+                Body Style
+              </div>
+              <strong>{latestLot.body_style}</strong>
             </div>
           )}
 
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "20px",
-            }}
-          >
-            {lots.map((lot) => {
-              const source =
-                lot.auction_source.toLowerCase();
+          {latestLot.color && (
+            <div style={{ padding: "18px 20px" }}>
+              <div
+                style={{
+                  color: "#777",
+                  fontSize: "11px",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.5px",
+                  marginBottom: "5px",
+                }}
+              >
+                Color
+              </div>
+              <strong>{latestLot.color}</strong>
+            </div>
+          )}
 
-              const lotUrl =
-                `/lot/${source}/${lot.lot_number}`;
+          {latestLot.engine && (
+            <div style={{ padding: "18px 20px" }}>
+              <div
+                style={{
+                  color: "#777",
+                  fontSize: "11px",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.5px",
+                  marginBottom: "5px",
+                }}
+              >
+                Engine
+              </div>
+              <strong>{latestLot.engine}</strong>
+            </div>
+          )}
 
-              return (
-                <article
-  key={`${lot.auction_source}-${lot.lot_number}`}
-  className="vin-auction-card"
->
-                  {/* PHOTO */}
+          {latestLot.transmission && (
+            <div style={{ padding: "18px 20px" }}>
+              <div
+                style={{
+                  color: "#777",
+                  fontSize: "11px",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.5px",
+                  marginBottom: "5px",
+                }}
+              >
+                Transmission
+              </div>
+              <strong>{latestLot.transmission}</strong>
+            </div>
+          )}
 
-                  <Link
-                    href={lotUrl}
-                    style={{
-                      display: "block",
-                      background: "#f3f3f3",
-                      minHeight: "250px",
-                    }}
-                  >
-                    {lot.image_urls &&
-                    lot.image_urls.length > 0 ? (
-                      <img
-                        src={lot.image_urls[0]}
-                        alt={`${vehicleName} ${lot.auction_source} auction lot ${lot.lot_number}`}
-                        loading="lazy"
-                        style={{
-                          width: "100%",
-                          height: "100%",
-                          minHeight: "250px",
-                          objectFit: "cover",
-                          display: "block",
-                        }}
-                      />
-                    ) : (
-                      <div
-                        style={{
-                          height: "100%",
-                          minHeight: "250px",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          color: "#777",
-                          fontSize: "14px",
-                        }}
-                      >
-                        No photo available
-                      </div>
-                    )}
-                  </Link>
+          {latestLot.drivetrain && (
+            <div style={{ padding: "18px 20px" }}>
+              <div
+                style={{
+                  color: "#777",
+                  fontSize: "11px",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.5px",
+                  marginBottom: "5px",
+                }}
+              >
+                Drivetrain
+              </div>
+              <strong>{latestLot.drivetrain}</strong>
+            </div>
+          )}
 
-                  {/* AUCTION DETAILS */}
+          {latestLot.fuel && (
+            <div style={{ padding: "18px 20px" }}>
+              <div
+                style={{
+                  color: "#777",
+                  fontSize: "11px",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.5px",
+                  marginBottom: "5px",
+                }}
+              >
+                Fuel
+              </div>
+              <strong>{latestLot.fuel}</strong>
+            </div>
+          )}
+        </div>
+      </div>
+    )}
 
-                  <div
-                    style={{
-                      padding: "26px 28px",
-                      display: "flex",
-                      flexDirection: "column",
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        flexWrap: "wrap",
-                        gap: "8px",
-                        marginBottom: "9px",
-                      }}
-                    >
-                      <span
-  style={{
-    display: "inline-block",
-    background: "#171717",
-    color: "#ffffff",
-    padding: "7px 11px",
-    borderRadius: "6px",
-    fontSize: "12px",
-    fontWeight: "700",
-    letterSpacing: "0.7px",
-    textTransform: "uppercase",
-  }}
->
-  {lot.auction_source}
-</span>
-
-                      <span
-                        style={{
-                          color: "#777",
-                          fontSize: "13px",
-                        }}
-                      >
-                        {formatDate(lot.auction_date)}
-                      </span>
-                    </div>
-
-                    <h3
-                      style={{
-                        margin: "0 0 22px",
-                        fontSize: "22px",
-                      }}
-                    >
-                      Lot #{lot.lot_number}
-                    </h3>
-
-                    <div
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns:
-                          "repeat(2, minmax(130px, 1fr))",
-                        gap: "18px 28px",
-                        marginBottom: "26px",
-                      }}
-                    >
-                      <div>
-                        <div
-                          style={{
-                            color: "#777",
-                            fontSize: "12px",
-                            textTransform: "uppercase",
-                            letterSpacing: "0.5px",
-                            marginBottom: "5px",
-                          }}
-                        >
-                          Final Bid
-                        </div>
-
-                        <strong
-                          style={{
-                            fontSize: "20px",
-                          }}
-                        >
-                          {formatBid(lot.final_bid)}
-                        </strong>
-                      </div>
-
-                      <div>
-                        <div
-                          style={{
-                            color: "#777",
-                            fontSize: "12px",
-                            textTransform: "uppercase",
-                            letterSpacing: "0.5px",
-                            marginBottom: "5px",
-                          }}
-                        >
-                          Mileage
-                        </div>
-
-                        <strong>
-                          {formatMileage(lot.mileage)}
-                        </strong>
-                      </div>
-
-                      <div>
-                        <div
-                          style={{
-                            color: "#777",
-                            fontSize: "12px",
-                            textTransform: "uppercase",
-                            letterSpacing: "0.5px",
-                            marginBottom: "5px",
-                          }}
-                        >
-                          Primary Damage
-                        </div>
-
-                        <strong>
-                          {lot.primary_damage ||
-                            "Not available"}
-                        </strong>
-                      </div>
-
-                      <div>
-                        <div
-                          style={{
-                            color: "#777",
-                            fontSize: "12px",
-                            textTransform: "uppercase",
-                            letterSpacing: "0.5px",
-                            marginBottom: "5px",
-                          }}
-                        >
-                          Location
-                        </div>
-
-                        <strong>
-                          {lot.location ||
-                            "Not available"}
-                        </strong>
-                      </div>
-                    </div>
-
-                    <div
-                      style={{
-                        marginTop: "auto",
-                        paddingTop: "4px",
-                      }}
-                    >
-                      <Link
-                        href={lotUrl}
-                        style={{
-                          display: "inline-block",
-                          background: "#171717",
-                          color: "#fff",
-                          textDecoration: "none",
-                          fontWeight: "bold",
-                          fontSize: "14px",
-                          padding: "11px 16px",
-                          borderRadius: "6px",
-                        }}
-                      >
-                        View auction details →
-                      </Link>
-                    </div>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-        </section>
-
-        {/* VEHICLE INFORMATION */}
-
-        <section
+    {/* AUCTION / CONDITION DETAILS */}
+    {(latestLot.loss_type ||
+      latestLot.primary_damage ||
+      latestLot.secondary_damage ||
+      latestLot.start_code ||
+      latestLot.keys_present !== null ||
+      latestLot.seller ||
+      latestLot.seller_type ||
+      latestLot.sale_document ||
+      latestLot.acv !== null ||
+      latestLot.estimated_repair_cost !== null) && (
+      <div>
+        <h3
           style={{
-            marginTop: "48px",
-            borderTop: "1px solid #e5e5e5",
-            paddingTop: "34px",
+            margin: "0 0 14px",
+            fontSize: "17px",
           }}
         >
-          <h2
-            style={{
-              margin: "0 0 20px",
-              fontSize: "24px",
-            }}
-          >
-            Vehicle Information
-          </h2>
+          Auction & Condition
+        </h3>
 
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns:
-                "repeat(auto-fit, minmax(180px, 1fr))",
-              border: "1px solid #e2e2e2",
-              borderRadius: "10px",
-              overflow: "hidden",
-            }}
-          >
-            <div
-              style={{
-                padding: "18px 20px",
-              }}
-            >
+        <div
+  className="vin-condition-grid"
+  style={{
+    display: "grid",
+    gridTemplateColumns:
+      "repeat(4, minmax(0, 1fr))",
+            border: "1px solid #e2e2e2",
+            borderRadius: "10px",
+            overflow: "hidden",
+            background: "#fff",
+          }}
+        >
+          {latestLot.loss_type && (
+            <div style={{ padding: "18px 20px" }}>
               <div
                 style={{
                   color: "#777",
-                  fontSize: "12px",
+                  fontSize: "11px",
                   textTransform: "uppercase",
+                  letterSpacing: "0.5px",
                   marginBottom: "5px",
                 }}
               >
-                VIN
+                Loss Type
               </div>
-
-              <strong>{vehicle.vin}</strong>
+              <strong>{latestLot.loss_type}</strong>
             </div>
+          )}
 
-            <div
-              style={{
-                padding: "18px 20px",
-              }}
-            >
+          {latestLot.primary_damage && (
+            <div style={{ padding: "18px 20px" }}>
               <div
                 style={{
                   color: "#777",
-                  fontSize: "12px",
+                  fontSize: "11px",
                   textTransform: "uppercase",
+                  letterSpacing: "0.5px",
                   marginBottom: "5px",
                 }}
               >
-                Year
+                Primary Damage
               </div>
+              <strong>{latestLot.primary_damage}</strong>
+            </div>
+          )}
 
+          {latestLot.secondary_damage && (
+            <div style={{ padding: "18px 20px" }}>
+              <div
+                style={{
+                  color: "#777",
+                  fontSize: "11px",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.5px",
+                  marginBottom: "5px",
+                }}
+              >
+                Secondary Damage
+              </div>
+              <strong>{latestLot.secondary_damage}</strong>
+            </div>
+          )}
+
+          {latestLot.start_code && (
+            <div style={{ padding: "18px 20px" }}>
+              <div
+                style={{
+                  color: "#777",
+                  fontSize: "11px",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.5px",
+                  marginBottom: "5px",
+                }}
+              >
+                Start Code
+              </div>
+              <strong>{latestLot.start_code}</strong>
+            </div>
+          )}
+
+          {latestLot.keys_present !== null && (
+            <div style={{ padding: "18px 20px" }}>
+              <div
+                style={{
+                  color: "#777",
+                  fontSize: "11px",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.5px",
+                  marginBottom: "5px",
+                }}
+              >
+                Keys
+              </div>
               <strong>
-                {vehicle.year || "Not available"}
+                {latestLot.keys_present
+                  ? "Present"
+                  : "Not reported as present"}
               </strong>
             </div>
+          )}
 
-            <div
-              style={{
-                padding: "18px 20px",
-              }}
-            >
+          {latestLot.seller && (
+            <div style={{ padding: "18px 20px" }}>
               <div
                 style={{
                   color: "#777",
-                  fontSize: "12px",
+                  fontSize: "11px",
                   textTransform: "uppercase",
+                  letterSpacing: "0.5px",
                   marginBottom: "5px",
                 }}
               >
-                Make
+                Seller
               </div>
-
-              <strong>
-                {vehicle.make || "Not available"}
-              </strong>
+              <strong>{latestLot.seller}</strong>
             </div>
+          )}
 
-            <div
-              style={{
-                padding: "18px 20px",
-              }}
-            >
+          {latestLot.seller_type && (
+            <div style={{ padding: "18px 20px" }}>
               <div
                 style={{
                   color: "#777",
-                  fontSize: "12px",
+                  fontSize: "11px",
                   textTransform: "uppercase",
+                  letterSpacing: "0.5px",
                   marginBottom: "5px",
                 }}
               >
-                Model
+                Seller Type
               </div>
+              <strong>{latestLot.seller_type}</strong>
+            </div>
+          )}
 
+          {latestLot.sale_document && (
+            <div style={{ padding: "18px 20px" }}>
+              <div
+                style={{
+                  color: "#777",
+                  fontSize: "11px",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.5px",
+                  marginBottom: "5px",
+                }}
+              >
+                Sale Document
+              </div>
+              <strong>{latestLot.sale_document}</strong>
+            </div>
+          )}
+
+          {latestLot.acv !== null && (
+            <div style={{ padding: "18px 20px" }}>
+              <div
+                style={{
+                  color: "#777",
+                  fontSize: "11px",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.5px",
+                  marginBottom: "5px",
+                }}
+              >
+                Actual Cash Value
+              </div>
+              <strong>{formatBid(latestLot.acv)}</strong>
+            </div>
+          )}
+
+          {latestLot.estimated_repair_cost !== null && (
+            <div style={{ padding: "18px 20px" }}>
+              <div
+                style={{
+                  color: "#777",
+                  fontSize: "11px",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.5px",
+                  marginBottom: "5px",
+                }}
+              >
+                Estimated Repair Cost
+              </div>
               <strong>
-                {vehicle.model || "Not available"}
+                {formatBid(latestLot.estimated_repair_cost)}
               </strong>
             </div>
-          </div>
-        </section>
+          )}
+        </div>
+      </div>
+    )}
+  </section>
+)}
 
         {/* RESEARCH NOTE */}
 
@@ -1077,7 +1434,49 @@ const auctionSummary = latestLot
             since the recorded auction date.
           </p>
         </section>
-      </div>
+            </div>
+
+      <style>{`
+        @media (max-width: 800px) {
+          .vin-latest-showcase {
+            grid-template-columns: 1fr !important;
+          }
+
+          .vin-latest-showcase > div:first-child {
+            min-height: 280px !important;
+          }
+
+          .vin-latest-showcase > div:first-child img {
+            min-height: 280px !important;
+            height: 280px !important;
+          }
+
+          .vin-latest-showcase > div:last-child {
+            padding: 24px !important;
+          }
+
+          .vin-history-row {
+  grid-template-columns: 1fr !important;
+  gap: 14px !important;
+  padding: 20px !important;
+  align-items: start !important;
+}
+
+.vin-history-row > a {
+  margin-top: 2px;
+}
+
+.vin-details-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+
+.vin-condition-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+        }
+      `}</style>
     </main>
   );
+
+  
 }
