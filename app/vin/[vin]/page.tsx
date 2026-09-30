@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { supabase } from "../../../utils/supabase/client";
 import VinPhotoGallery from "./VinPhotoGallery";
-
+import RemoveListingButton from "../../components/RemoveListingButton";
 type Vehicle = {
   vin: string;
   year: number | null;
@@ -429,92 +429,225 @@ const auctionSummary = latestLot
 
       {/* VEHICLE HERO */}
 
-      <section
-        style={{
-          background: "#f6f7f8",
-          borderBottom: "1px solid #e8e8e8",
-        }}
-      >
-        <div
-  className="vin-hero-inner"
+<section
   style={{
-            maxWidth: "1200px",
-            margin: "0 auto",
-            padding: "48px 24px 44px",
-          }}
-        >
-          <div
-            style={{
-              fontSize: "12px",
-              fontWeight: "bold",
-              textTransform: "uppercase",
-              letterSpacing: "1px",
-              color: "#666",
-              marginBottom: "10px",
-            }}
-          >
-            Vehicle Auction History
-          </div>
-
-          <h1
-  className="vin-vehicle-title"
-  style={{
-    fontSize: "42px",
-              lineHeight: 1.12,
-              margin: "0 0 12px",
-              letterSpacing: "-0.5px",
-            }}
-          >
-            {vehicleName || vehicle.vin}
-          </h1>
-
-          {vehicle.trim && (
-  <div
-    style={{
-      fontSize: "21px",
-      fontWeight: "600",
-      color: "#3f3f3f",
-      marginBottom: "22px",
-    }}
-  >
-    {vehicle.trim}
-  </div>
-)}
-
-          <div
-  style={{
-    display: "flex",
-    alignItems: "baseline",
-    flexWrap: "wrap",
-    gap: "12px",
+    background: "#f6f7f8",
+    borderBottom: "1px solid #e8e8e8",
   }}
 >
-  <span
+  <div
+    className="vin-hero-inner"
     style={{
-      fontSize: "12px",
-      fontWeight: "700",
-      textTransform: "uppercase",
-      letterSpacing: "1px",
-      color: "#777",
+      maxWidth: "1200px",
+      margin: "0 auto",
+      padding: "48px 24px 44px",
+      display: "grid",
+      gridTemplateColumns: "minmax(0, 1fr) 420px",
+      gap: "70px",
+      alignItems: "center",
     }}
   >
-    VIN
-  </span>
+    {/* VEHICLE IDENTITY */}
 
-  <strong
-    style={{
-      fontSize: "22px",
-      lineHeight: 1.2,
-      color: "#111",
-      letterSpacing: "1px",
-      fontFamily: "monospace",
-    }}
-  >
-    {vehicle.vin}
-  </strong>
-</div>
+    <div>
+      <div
+        style={{
+          fontSize: "12px",
+          fontWeight: "bold",
+          textTransform: "uppercase",
+          letterSpacing: "1px",
+          color: "#666",
+          marginBottom: "10px",
+        }}
+      >
+        Vehicle Auction History
+      </div>
+
+      <h1
+        className="vin-vehicle-title"
+        style={{
+          fontSize: "42px",
+          lineHeight: 1.12,
+          margin: "0 0 12px",
+          letterSpacing: "-0.5px",
+        }}
+      >
+        {vehicleName || vehicle.vin}
+      </h1>
+
+      {vehicle.trim && (
+        <div
+          style={{
+            fontSize: "21px",
+            fontWeight: "600",
+            color: "#3f3f3f",
+            marginBottom: "22px",
+          }}
+        >
+          {vehicle.trim}
         </div>
-      </section>
+      )}
+
+      <div
+        style={{
+          display: "flex",
+          alignItems: "baseline",
+          flexWrap: "wrap",
+          gap: "12px",
+        }}
+      >
+        <span
+          style={{
+            fontSize: "12px",
+            fontWeight: "700",
+            textTransform: "uppercase",
+            letterSpacing: "1px",
+            color: "#777",
+          }}
+        >
+          VIN
+        </span>
+
+        <strong
+          style={{
+            fontSize: "22px",
+            lineHeight: 1.2,
+            color: "#111",
+            letterSpacing: "1px",
+            fontFamily: "monospace",
+          }}
+        >
+          {vehicle.vin}
+        </strong>
+      </div>
+    </div>
+
+    {/* ARCHIVE SNAPSHOT */}
+
+    <div
+      className="vin-archive-snapshot"
+      style={{
+        borderLeft: "1px solid #dddddd",
+        paddingLeft: "42px",
+      }}
+    >
+      <div
+        style={{
+          fontSize: "11px",
+          fontWeight: "700",
+          textTransform: "uppercase",
+          letterSpacing: "1px",
+          color: "#777",
+          marginBottom: "18px",
+        }}
+      >
+        Archive Snapshot
+      </div>
+
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: "22px 28px",
+        }}
+      >
+        <div>
+          <strong
+            style={{
+              display: "block",
+              fontSize: "25px",
+              lineHeight: 1.1,
+              marginBottom: "5px",
+            }}
+          >
+            {lots.length}
+          </strong>
+
+          <span
+            style={{
+              fontSize: "12px",
+              color: "#666",
+            }}
+          >
+            {lots.length === 1
+              ? "Auction Record"
+              : "Auction Records"}
+          </span>
+        </div>
+
+        <div>
+          <strong
+            style={{
+              display: "block",
+              fontSize: "25px",
+              lineHeight: 1.1,
+              marginBottom: "5px",
+            }}
+          >
+            {totalPhotos}
+          </strong>
+
+          <span
+            style={{
+              fontSize: "12px",
+              color: "#666",
+            }}
+          >
+            Archived Photos
+          </span>
+        </div>
+
+        <div>
+          <strong
+            style={{
+              display: "block",
+              fontSize: "17px",
+              lineHeight: 1.2,
+              marginBottom: "5px",
+            }}
+          >
+            {auctionSources.length > 0
+              ? auctionSources.join(" + ")
+              : "Not available"}
+          </strong>
+
+          <span
+            style={{
+              fontSize: "12px",
+              color: "#666",
+            }}
+          >
+            Auction Source
+          </span>
+        </div>
+
+        <div>
+          <strong
+            style={{
+              display: "block",
+              fontSize: "17px",
+              lineHeight: 1.2,
+              marginBottom: "5px",
+            }}
+          >
+            {latestLot?.auction_date
+              ? formatDate(latestLot.auction_date)
+              : "Not available"}
+          </strong>
+
+          <span
+            style={{
+              fontSize: "12px",
+              color: "#666",
+            }}
+          >
+            Latest Appearance
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
 
       <div
   className="vin-page-content"
@@ -787,12 +920,49 @@ const auctionSummary = latestLot
           </div>
         )}
       </div>
+{/* REMOVAL CTA */}
 
+<div
+  style={{
+    marginTop: "auto",
+    marginBottom: "16px",
+    paddingTop: "22px",
+    borderTop: "1px solid #e8e8e8",
+  }}
+>
+  <div
+    style={{
+      fontSize: "14px",
+      fontWeight: "700",
+      color: "#171717",
+      marginBottom: "5px",
+    }}
+  >
+    Want this auction record removed?
+  </div>
+
+  <div
+    style={{
+      fontSize: "12px",
+      lineHeight: 1.5,
+      color: "#666",
+      marginBottom: "13px",
+    }}
+  >
+    Request removal of this listing and its archived photos.
+  </div>
+
+  <RemoveListingButton
+    vin={latestLot.vin}
+    auctionSource={latestLot.auction_source}
+    lotNumber={latestLot.lot_number}
+  />
+</div>
       <Link
         href={`/lot/${latestLot.auction_source.toLowerCase()}/${latestLot.lot_number}`}
         style={{
           display: "block",
-          marginTop: "auto",
+          marginTop: "0",
           padding: "13px 16px",
           background: "#171717",
           color: "#fff",
@@ -1438,6 +1608,17 @@ const auctionSummary = latestLot
 
       <style>{`
         @media (max-width: 800px) {
+        .vin-hero-inner {
+  grid-template-columns: 1fr !important;
+  gap: 30px !important;
+}
+
+.vin-archive-snapshot {
+  border-left: none !important;
+  border-top: 1px solid #dddddd;
+  padding-left: 0 !important;
+  padding-top: 28px;
+}
           .vin-latest-showcase {
             grid-template-columns: 1fr !important;
           }
