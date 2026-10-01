@@ -117,7 +117,21 @@ function formatDate(value: string | null) {
     day: "numeric",
   });
 }
+function displayModel(model: string | null | undefined) {
+  if (!model) return null;
 
+  const modelMap: Record<string, string> = {
+    "2ER": "2 Series",
+    "3ER": "3 Series",
+    "4ER": "4 Series",
+    "5ER": "5 Series",
+    "6ER": "6 Series",
+    "7ER": "7 Series",
+    "8ER": "8 Series",
+  };
+
+  return modelMap[model.toUpperCase()] || model;
+}
 export async function generateMetadata({
   params,
 }: {
@@ -142,13 +156,13 @@ export async function generateMetadata({
 
   const { vehicle, lots } = history;
 
-  const vehicleName = [
-    vehicle.year,
-    vehicle.make,
-    vehicle.model,
-  ]
-    .filter(Boolean)
-    .join(" ");
+ const vehicleName = [
+  vehicle.year,
+  vehicle.make,
+  displayModel(vehicle.model),
+]
+  .filter(Boolean)
+  .join(" ");
 
   const title = `${vehicleName} Auction History - VIN ${vehicle.vin}`;
 
@@ -314,12 +328,12 @@ export default async function VinPage({
   const { vehicle, lots } = history;
 
   const vehicleName = [
-    vehicle.year,
-    vehicle.make,
-    vehicle.model,
-  ]
-    .filter(Boolean)
-    .join(" ");
+  vehicle.year,
+  vehicle.make,
+  displayModel(vehicle.model),
+]
+  .filter(Boolean)
+  .join(" ");
 
   const totalPhotos = lots.reduce(
     (total, lot) =>
@@ -476,17 +490,21 @@ const auctionSummary = latestLot
       </h1>
 
       {vehicle.trim && (
-        <div
-          style={{
-            fontSize: "21px",
-            fontWeight: "600",
-            color: "#3f3f3f",
-            marginBottom: "22px",
-          }}
-        >
-          {vehicle.trim}
-        </div>
-      )}
+  <div
+    style={{
+      fontSize: "24px",
+      fontWeight: "700",
+      color: "#2b2b2b",
+      marginBottom: "22px",
+      lineHeight: 1.2,
+    }}
+  >
+    {vehicle.trim?.replace(
+  new RegExp(`^${vehicle.year}\\s+`, "i"),
+  ""
+)}
+  </div>
+)}
 
       <div
         style={{
@@ -601,7 +619,7 @@ const auctionSummary = latestLot
           <strong
             style={{
               display: "block",
-              fontSize: "17px",
+              fontSize: "21px",
               lineHeight: 1.2,
               marginBottom: "5px",
             }}
@@ -625,9 +643,10 @@ const auctionSummary = latestLot
           <strong
             style={{
               display: "block",
-              fontSize: "17px",
+             fontSize: "21px",
               lineHeight: 1.2,
               marginBottom: "5px",
+              whiteSpace: "nowrap",
             }}
           >
             {latestLot?.auction_date
@@ -982,6 +1001,7 @@ const auctionSummary = latestLot
 
       {/* AUCTION HISTORY */}
 
+{lots.length !== 1 && (
 <section
   style={{
     marginTop: "42px",
@@ -1178,9 +1198,9 @@ const auctionSummary = latestLot
     </div>
   )}
 </section>
+)}
 
-        {/* VEHICLE & AUCTION DETAILS */}
-
+{/* VEHICLE & AUCTION DETAILS */}
 {latestLot && (
   <section
     style={{
@@ -1237,17 +1257,14 @@ const auctionSummary = latestLot
         </h3>
 
         <div
-        className="vin-details-grid"
-          style={{
-            display: "grid",
-            gridTemplateColumns:
-  "repeat(auto-fit, minmax(150px, 1fr))",
-            border: "1px solid #e2e2e2",
-            borderRadius: "10px",
-            overflow: "hidden",
-            background: "#fff",
-          }}
-        >
+  className="vin-details-grid"
+  style={{
+    display: "grid",
+    gridTemplateColumns:
+      "repeat(auto-fit, minmax(220px, 1fr))",
+    gap: "12px",
+  }}
+>
          
 
           {latestLot.body_style && (
@@ -1268,7 +1285,14 @@ const auctionSummary = latestLot
           )}
 
           {latestLot.color && (
-            <div style={{ padding: "18px 20px" }}>
+            <div
+  style={{
+    padding: "16px 18px",
+    background: "#fafafa",
+    border: "1px solid #e5e5e5",
+    borderRadius: "8px",
+  }}
+>
               <div
                 style={{
                   color: "#777",
@@ -1285,7 +1309,14 @@ const auctionSummary = latestLot
           )}
 
           {latestLot.engine && (
-            <div style={{ padding: "18px 20px" }}>
+            <div
+  style={{
+    padding: "16px 18px",
+    background: "#fafafa",
+    border: "1px solid #e5e5e5",
+    borderRadius: "8px",
+  }}
+>
               <div
                 style={{
                   color: "#777",
@@ -1302,7 +1333,14 @@ const auctionSummary = latestLot
           )}
 
           {latestLot.transmission && (
-            <div style={{ padding: "18px 20px" }}>
+            <div
+  style={{
+    padding: "16px 18px",
+    background: "#fafafa",
+    border: "1px solid #e5e5e5",
+    borderRadius: "8px",
+  }}
+>
               <div
                 style={{
                   color: "#777",
@@ -1319,7 +1357,14 @@ const auctionSummary = latestLot
           )}
 
           {latestLot.drivetrain && (
-            <div style={{ padding: "18px 20px" }}>
+            <div
+  style={{
+    padding: "16px 18px",
+    background: "#fafafa",
+    border: "1px solid #e5e5e5",
+    borderRadius: "8px",
+  }}
+>
               <div
                 style={{
                   color: "#777",
@@ -1336,7 +1381,14 @@ const auctionSummary = latestLot
           )}
 
           {latestLot.fuel && (
-            <div style={{ padding: "18px 20px" }}>
+            <div
+  style={{
+    padding: "16px 18px",
+    background: "#fafafa",
+    border: "1px solid #e5e5e5",
+    borderRadius: "8px",
+  }}
+>
               <div
                 style={{
                   color: "#777",
@@ -1381,15 +1433,19 @@ const auctionSummary = latestLot
   style={{
     display: "grid",
     gridTemplateColumns:
-      "repeat(4, minmax(0, 1fr))",
-            border: "1px solid #e2e2e2",
-            borderRadius: "10px",
-            overflow: "hidden",
-            background: "#fff",
-          }}
-        >
+      "repeat(auto-fit, minmax(220px, 1fr))",
+    gap: "12px",
+  }}
+>
           {latestLot.loss_type && (
-            <div style={{ padding: "18px 20px" }}>
+            <div
+  style={{
+    padding: "16px 18px",
+    background: "#fafafa",
+    border: "1px solid #e5e5e5",
+    borderRadius: "8px",
+  }}
+>
               <div
                 style={{
                   color: "#777",
@@ -1406,7 +1462,14 @@ const auctionSummary = latestLot
           )}
 
           {latestLot.primary_damage && (
-            <div style={{ padding: "18px 20px" }}>
+            <div
+  style={{
+    padding: "16px 18px",
+    background: "#fafafa",
+    border: "1px solid #e5e5e5",
+    borderRadius: "8px",
+  }}
+>
               <div
                 style={{
                   color: "#777",
@@ -1423,7 +1486,14 @@ const auctionSummary = latestLot
           )}
 
           {latestLot.secondary_damage && (
-            <div style={{ padding: "18px 20px" }}>
+            <div
+  style={{
+    padding: "16px 18px",
+    background: "#fafafa",
+    border: "1px solid #e5e5e5",
+    borderRadius: "8px",
+  }}
+>
               <div
                 style={{
                   color: "#777",
@@ -1440,7 +1510,14 @@ const auctionSummary = latestLot
           )}
 
           {latestLot.start_code && (
-            <div style={{ padding: "18px 20px" }}>
+            <div
+  style={{
+    padding: "16px 18px",
+    background: "#fafafa",
+    border: "1px solid #e5e5e5",
+    borderRadius: "8px",
+  }}
+>
               <div
                 style={{
                   color: "#777",
@@ -1457,7 +1534,14 @@ const auctionSummary = latestLot
           )}
 
           {latestLot.keys_present !== null && (
-            <div style={{ padding: "18px 20px" }}>
+            <div
+  style={{
+    padding: "16px 18px",
+    background: "#fafafa",
+    border: "1px solid #e5e5e5",
+    borderRadius: "8px",
+  }}
+>
               <div
                 style={{
                   color: "#777",
@@ -1478,7 +1562,14 @@ const auctionSummary = latestLot
           )}
 
           {latestLot.seller && (
-            <div style={{ padding: "18px 20px" }}>
+            <div
+  style={{
+    padding: "16px 18px",
+    background: "#fafafa",
+    border: "1px solid #e5e5e5",
+    borderRadius: "8px",
+  }}
+>
               <div
                 style={{
                   color: "#777",
@@ -1495,7 +1586,14 @@ const auctionSummary = latestLot
           )}
 
           {latestLot.seller_type && (
-            <div style={{ padding: "18px 20px" }}>
+            <div
+  style={{
+    padding: "16px 18px",
+    background: "#fafafa",
+    border: "1px solid #e5e5e5",
+    borderRadius: "8px",
+  }}
+>
               <div
                 style={{
                   color: "#777",
@@ -1512,7 +1610,14 @@ const auctionSummary = latestLot
           )}
 
           {latestLot.sale_document && (
-            <div style={{ padding: "18px 20px" }}>
+            <div
+  style={{
+    padding: "16px 18px",
+    background: "#fafafa",
+    border: "1px solid #e5e5e5",
+    borderRadius: "8px",
+  }}
+>
               <div
                 style={{
                   color: "#777",
@@ -1529,7 +1634,14 @@ const auctionSummary = latestLot
           )}
 
           {latestLot.acv !== null && (
-            <div style={{ padding: "18px 20px" }}>
+            <div
+  style={{
+    padding: "16px 18px",
+    background: "#fafafa",
+    border: "1px solid #e5e5e5",
+    borderRadius: "8px",
+  }}
+>
               <div
                 style={{
                   color: "#777",
@@ -1546,7 +1658,14 @@ const auctionSummary = latestLot
           )}
 
           {latestLot.estimated_repair_cost !== null && (
-            <div style={{ padding: "18px 20px" }}>
+           <div
+  style={{
+    padding: "16px 18px",
+    background: "#fafafa",
+    border: "1px solid #e5e5e5",
+    borderRadius: "8px",
+  }}
+>
               <div
                 style={{
                   color: "#777",

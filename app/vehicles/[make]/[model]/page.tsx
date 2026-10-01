@@ -1,3 +1,5 @@
+
+
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { cache } from "react";
@@ -31,7 +33,7 @@ type AuctionWithVehicle = AuctionLot & {
 
 const MIN_MODEL_VEHICLES = 5;
 const MODEL_BATCH_SIZE = 1000;
-
+const PAGE_SIZE = 24;
 const SUPPORTED_MAKES: Record<
   string,
   {
@@ -215,7 +217,14 @@ function formatMileage(mileage: number | null) {
 
 
 
-async function getModelData(make: string, model: string) {
+async function getModelData(
+  make: string,
+  model: string,
+  page: number
+) {
+  const from = (page - 1) * PAGE_SIZE;
+  const to = from + PAGE_SIZE - 1;
+
   const {
     data: vehicles,
     error: vehicleError,
@@ -285,7 +294,7 @@ async function getModelData(make: string, model: string) {
     .order("id", {
       ascending: false,
     })
-    .limit(24);
+    .range(from, to);
 
   if (lotError) {
     console.error("Model auction error:", lotError);
@@ -297,12 +306,11 @@ async function getModelData(make: string, model: string) {
     };
   }
 
-  const auctions: AuctionWithVehicle[] = ((lots || []) as AuctionLot[]).map(
-    (lot) => ({
+  const auctions: AuctionWithVehicle[] =
+    ((lots || []) as AuctionLot[]).map((lot) => ({
       ...lot,
       vehicle: vehicleMap.get(lot.vin) || null,
-    })
-  );
+    }));
 
   return {
     auctions,
@@ -373,11 +381,16 @@ export async function generateMetadata({
 
 export default async function VehicleModelPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ make: string; model: string }>;
+  searchParams: Promise<{
+    page?: string;
+  }>;
 }) {
   const { make: makeSlug, model: modelSlug } = await params;
-
+const query = await searchParams;
+const page = Math.max(1, Number(query.page) || 1);
   const config = await getModelConfig(makeSlug, modelSlug);
 
   if (!config) {
@@ -385,13 +398,22 @@ export default async function VehicleModelPage({
   }
 
   const { auctions, vehicleCount, auctionCount } = await getModelData(
-    config.make,
-    config.model
-  );
+  config.make,
+  config.model,
+  page
+);
 
   if (vehicleCount === 0) {
     notFound();
   }
+  const totalPages = Math.max(
+  1,
+  Math.ceil(auctionCount / PAGE_SIZE)
+);
+
+if (page > totalPages && auctionCount > 0) {
+  notFound();
+}
 
   const vehicleName = `${config.makeName} ${config.modelName}`;
 
@@ -764,6 +786,84 @@ export default async function VehicleModelPage({
               );
             })}
           </div>
+
+          {totalPages > 1 && (
+  <nav
+    style={{
+      marginTop: "36px",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      gap: "8px",
+      flexWrap: "wrap",
+    }}
+  >
+    {page > 1 && (
+      <Link
+        href={`?page=${page - 1}`}
+        style={{
+          padding: "9px 12px",
+          border: "1px solid #d8d8d8",
+          borderRadius: "7px",
+          color: "#171717",
+          background: "#ffffff",
+          textDecoration: "none",
+        }}
+      >
+        ← Previous
+      </Link>
+    )}
+
+    {Array.from({ length: totalPages }, (_, index) => {
+      const pageNumber = index + 1;
+
+      return (
+        <Link
+          key={pageNumber}
+          href={`?page=${pageNumber}`}
+          style={{
+            minWidth: "38px",
+            padding: "9px 10px",
+            textAlign: "center",
+            border: "1px solid #d8d8d8",
+            borderRadius: "7px",
+            color:
+              pageNumber === page
+                ? "#ffffff"
+                : "#171717",
+            background:
+              pageNumber === page
+                ? "#171717"
+                : "#ffffff",
+            textDecoration: "none",
+            fontWeight:
+              pageNumber === page
+                ? "bold"
+                : "normal",
+          }}
+        >
+          {pageNumber}
+        </Link>
+      );
+    })}
+
+    {page < totalPages && (
+      <Link
+        href={`?page=${page + 1}`}
+        style={{
+          padding: "9px 12px",
+          border: "1px solid #d8d8d8",
+          borderRadius: "7px",
+          color: "#171717",
+          background: "#ffffff",
+          textDecoration: "none",
+        }}
+      >
+        Next →
+      </Link>
+    )}
+  </nav>
+)}
         </section>
 
         <section

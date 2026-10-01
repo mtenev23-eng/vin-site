@@ -216,28 +216,50 @@ async function getVehicleArchive(
   const from = (page - 1) * PAGE_SIZE;
   const to = from + PAGE_SIZE - 1;
 
-  let vehicleQuery = supabase
-    .from("vehicles")
-    .select("vin, year, make, model, trim", {
-      count: "exact",
-    })
+  let archiveQuery = supabase
+    .from("vehicle_auction_archive")
+    .select(
+      `
+        vin,
+        year,
+        make,
+        model,
+        trim,
+        auction_id,
+        auction_source,
+        lot_number,
+        final_bid,
+        auction_date,
+        mileage,
+        primary_damage,
+        image_urls
+      `,
+      {
+        count: "exact",
+      }
+    )
     .eq("make", databaseMake)
-    .order("created_at", {
+    .not("auction_date", "is", null)
+    .order("auction_date", {
+      ascending: false,
+      nullsFirst: false,
+    })
+    .order("auction_id", {
       ascending: false,
     });
 
   if (selectedModel) {
-    vehicleQuery = vehicleQuery.eq("model", selectedModel);
+    archiveQuery = archiveQuery.eq("model", selectedModel);
   }
 
   const {
-    data: vehicles,
-    error: vehicleError,
+    data,
+    error,
     count,
-  } = await vehicleQuery.range(from, to);
+  } = await archiveQuery.range(from, to);
 
-  if (vehicleError) {
-    console.error("Vehicle archive error:", vehicleError);
+  if (error) {
+    console.error("Vehicle archive error:", error);
 
     return {
       cards: [] as VehicleCard[],
@@ -245,56 +267,26 @@ async function getVehicleArchive(
     };
   }
 
-  const typedVehicles = (vehicles || []) as Vehicle[];
+  const cards: VehicleCard[] = (data || []).map((row) => ({
+    vehicle: {
+      vin: row.vin,
+      year: row.year,
+      make: row.make,
+      model: row.model,
+      trim: row.trim,
+    },
 
-  if (typedVehicles.length === 0) {
-    return {
-      cards: [] as VehicleCard[],
-      totalCount: count || 0,
-    };
-  }
-
-  const vins = typedVehicles.map((vehicle) => vehicle.vin);
-
-  const { data: lots, error: lotError } = await supabase
-    .from("auction_lots")
-    .select(
-      `
-        id,
-        auction_source,
-        lot_number,
-        vin,
-        final_bid,
-        auction_date,
-        mileage,
-        primary_damage,
-        image_urls
-      `
-    )
-    .in("vin", vins)
-    .order("auction_date", {
-      ascending: false,
-      nullsFirst: false,
-    })
-    .order("id", {
-      ascending: false,
-    });
-
-  if (lotError) {
-    console.error("Vehicle auction lookup error:", lotError);
-  }
-
-  const latestLotByVin = new Map<string, AuctionLot>();
-
-  for (const lot of (lots || []) as AuctionLot[]) {
-    if (!latestLotByVin.has(lot.vin)) {
-      latestLotByVin.set(lot.vin, lot);
-    }
-  }
-
-  const cards: VehicleCard[] = typedVehicles.map((vehicle) => ({
-    vehicle,
-    lot: latestLotByVin.get(vehicle.vin) || null,
+    lot: {
+      id: row.auction_id,
+      auction_source: row.auction_source,
+      lot_number: row.lot_number,
+      vin: row.vin,
+      final_bid: row.final_bid,
+      auction_date: row.auction_date,
+      mileage: row.mileage,
+      primary_damage: row.primary_damage,
+      image_urls: row.image_urls,
+    },
   }));
 
   return {
