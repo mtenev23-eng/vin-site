@@ -5,7 +5,11 @@ import { notFound } from "next/navigation";
 import { cache } from "react";
 
 import { supabase } from "../../../../utils/supabase/client";
-
+import {
+  displayModel,
+  slugifyModel,
+  normalizeModelName as sharedNormalizeModelName,
+} from "../../../../utils/vehicle-models";
 type Vehicle = {
   vin: string;
   year: number | null;
@@ -82,38 +86,7 @@ const SUPPORTED_MAKES: Record<
   },
 };
 
-const MODEL_DISPLAY_NAMES: Record<string, string> = {
-  "2ER": "2 Series",
-  "3ER": "3 Series",
-  "4ER": "4 Series",
-  "5ER": "5 Series",
-  "6ER": "6 Series",
-  "7ER": "7 Series",
-  "8ER": "8 Series",
 
-  "A-KLASSE": "A-Class",
-  "C-KLASSE": "C-Class",
-  "CLA-KLASSE": "CLA-Class",
-  "CLS-KLASSE": "CLS-Class",
-  "E-KLASSE": "E-Class",
-  "G-KLASSE": "G-Class",
-  "GLA-KLASSE": "GLA-Class",
-  "S-KLASSE": "S-Class",
-  "SL-KLASSE": "SL-Class",
-};
-
-function displayModel(model: string) {
-  return MODEL_DISPLAY_NAMES[model.toUpperCase()] || model;
-}
-
-function slugifyModel(model: string) {
-  return displayModel(model)
-    .toLowerCase()
-    .trim()
-    .replace(/&/g, "and")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-}
 
 const getModelsForMake = cache(async (databaseMake: string) => {
   const models: string[] = [];
@@ -165,7 +138,56 @@ const getModelConfig = cache(
     }
 
     const models = await getModelsForMake(makeConfig.databaseMake);
+if (normalizedMakeSlug === "bmw") {
+  const bmwGroups: Record<string, { name: string; prefix: string }> = {
+    "1-series": { name: "1 Series", prefix: "1" },
+    "2-series": { name: "2 Series", prefix: "2" },
+    "3-series": { name: "3 Series", prefix: "3" },
+    "4-series": { name: "4 Series", prefix: "4" },
+    "5-series": { name: "5 Series", prefix: "5" },
+    "6-series": { name: "6 Series", prefix: "6" },
+    "7-series": { name: "7 Series", prefix: "7" },
+    "8-series": { name: "8 Series", prefix: "8" },
+    "z-series": { name: "Z Series", prefix: "Z" },
+    "x-series": { name: "X Series", prefix: "X" },
+    "m": { name: "M", prefix: "M" },
+  };
 
+  const group = bmwGroups[normalizedModelSlug];
+
+  if (group) {
+    const rawModels = [
+      ...new Set(
+        models.filter((model) =>
+          displayModel(model)
+            .toUpperCase()
+            .startsWith(group.prefix.toUpperCase())
+        )
+      ),
+    ];
+
+    if (rawModels.length === 0) {
+      return null;
+    }
+
+    const vehicleCount = models.filter((model) =>
+      rawModels.includes(model)
+    ).length;
+
+    if (vehicleCount < MIN_MODEL_VEHICLES) {
+      return null;
+    }
+
+    return {
+      make: makeConfig.databaseMake,
+      model: group.name,
+      rawModels,
+      makeName: makeConfig.displayName,
+      modelName: group.name,
+      vehicleCount,
+    };
+  }
+}
     const groupedModels = new Map<
   string,
   {
@@ -175,7 +197,10 @@ const getModelConfig = cache(
 >();
 
 for (const model of models) {
-  const normalizedModel = displayModel(model);
+  const normalizedModel = sharedNormalizeModelName(
+  makeConfig.databaseMake,
+  model
+);
 
   const existingKey = Array.from(groupedModels.keys()).find(
     (key) =>
@@ -248,21 +273,22 @@ async function getModelData(
   model: string,
   rawModels: string[],
   page: number
-){
+) {
   const from = (page - 1) * PAGE_SIZE;
   const to = from + PAGE_SIZE - 1;
 
   const {
-    data: vehicles,
+    data: vehicleRows,
     error: vehicleError,
     count: vehicleCount,
   } = await supabase
     .from("vehicles")
-    .select("vin, year, make, model, trim", {
+    .select("vin", {
       count: "exact",
+      head: true,
     })
-   .ilike("make", make)
-.in("model", rawModels);
+    .ilike("make", make)
+    .in("model", rawModels);
 
   if (vehicleError) {
     console.error("Model vehicle error:", vehicleError);
@@ -274,51 +300,40 @@ async function getModelData(
     };
   }
 
-  if (!vehicles || vehicles.length === 0) {
-    return {
-      auctions: [] as AuctionWithVehicle[],
-      vehicleCount: 0,
-      auctionCount: 0,
-    };
-  }
-
-  const typedVehicles = vehicles as Vehicle[];
-
-  const vehicleMap = new Map<string, Vehicle>(
-    typedVehicles.map((vehicle) => [vehicle.vin, vehicle])
-  );
-
-  const vins = typedVehicles.map((vehicle) => vehicle.vin);
-
   const {
-    data: lots,
+    data,
     error: lotError,
     count: auctionCount,
   } = await supabase
-    .from("auction_lots")
+    .from("vehicle_auction_archive")
     .select(
       `
-        id,
+        auction_id,
         auction_source,
         lot_number,
         vin,
         final_bid,
         auction_date,
         mileage,
-        location,
         primary_damage,
-        image_urls
+        image_urls,
+        year,
+        make,
+        model,
+        trim
       `,
       {
         count: "exact",
       }
     )
-    .in("vin", vins)
+    .ilike("make", make)
+    .in("model", rawModels)
+    .not("auction_date", "is", null)
     .order("auction_date", {
       ascending: false,
       nullsFirst: false,
     })
-    .order("id", {
+    .order("auction_id", {
       ascending: false,
     })
     .range(from, to);
@@ -328,20 +343,36 @@ async function getModelData(
 
     return {
       auctions: [] as AuctionWithVehicle[],
-      vehicleCount: vehicleCount || typedVehicles.length,
+      vehicleCount: vehicleCount || 0,
       auctionCount: 0,
     };
   }
 
-  const auctions: AuctionWithVehicle[] =
-    ((lots || []) as AuctionLot[]).map((lot) => ({
-      ...lot,
-      vehicle: vehicleMap.get(lot.vin) || null,
-    }));
+  const auctions: AuctionWithVehicle[] = (data || []).map(
+    (row) => ({
+      id: row.auction_id,
+      auction_source: row.auction_source,
+      lot_number: row.lot_number,
+      vin: row.vin,
+      final_bid: row.final_bid,
+      auction_date: row.auction_date,
+      mileage: row.mileage,
+      location: null,
+      primary_damage: row.primary_damage,
+      image_urls: row.image_urls,
+      vehicle: {
+        vin: row.vin,
+        year: row.year,
+        make: row.make,
+        model: row.model,
+        trim: row.trim,
+      },
+    })
+  );
 
   return {
     auctions,
-    vehicleCount: vehicleCount || typedVehicles.length,
+    vehicleCount: vehicleCount || 0,
     auctionCount: auctionCount || 0,
   };
 }
@@ -445,14 +476,38 @@ if (page > totalPages && auctionCount > 0) {
 
   const vehicleName = `${config.makeName} ${config.modelName}`;
 
-  const bids = auctions
-    .map((lot) => lot.final_bid)
-    .filter((bid): bid is number => bid !== null);
+  const { data: recentBidRows } = await supabase
+  .from("vehicle_auction_archive")
+  .select("final_bid")
+  .ilike("make", config.make)
+  .in("model", config.rawModels)
+  .not("final_bid", "is", null)
+  .not("auction_date", "is", null)
+  .order("auction_date", {
+    ascending: false,
+    nullsFirst: false,
+  })
+  .order("auction_id", {
+    ascending: false,
+  })
+  .limit(24);
 
-  const averageBid =
-    bids.length > 0
-      ? Math.round(bids.reduce((total, bid) => total + bid, 0) / bids.length)
-      : null;
+const recentBids = (recentBidRows || [])
+  .map((row) => row.final_bid)
+  .filter(
+    (bid): bid is number =>
+      typeof bid === "number"
+  );
+
+const averageBid =
+  recentBids.length > 0
+    ? Math.round(
+        recentBids.reduce(
+          (total, bid) => total + bid,
+          0
+        ) / recentBids.length
+      )
+    : null;
 
   return (
     <main
@@ -478,18 +533,49 @@ if (page > totalPages && auctionCount > 0) {
           }}
         >
           <div
-            style={{
-              fontSize: "13px",
-              fontWeight: "bold",
-              textTransform: "uppercase",
-              letterSpacing: "1px",
-              color: "#666666",
-              marginBottom: "12px",
-            }}
-          >
-            Vehicle Auction Research
-          </div>
+  style={{
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    flexWrap: "wrap",
+    fontSize: "13px",
+    color: "#666666",
+    marginBottom: "12px",
+  }}
+>
+  <Link
+    href="/vehicles"
+    style={{
+      color: "#666666",
+      textDecoration: "none",
+    }}
+  >
+    Vehicles
+  </Link>
 
+  <span>›</span>
+
+  <Link
+    href={`/vehicles/${makeSlug.toLowerCase()}`}
+    style={{
+      color: "#666666",
+      textDecoration: "none",
+    }}
+  >
+    {config.makeName}
+  </Link>
+
+  <span>›</span>
+
+  <span
+    style={{
+      fontWeight: "bold",
+      color: "#171717",
+    }}
+  >
+    {config.modelName}
+  </span>
+</div>
           <h1
             className="vehicle-model-title"
             style={{
@@ -534,30 +620,7 @@ if (page > totalPages && auctionCount > 0) {
             marginBottom: "44px",
           }}
         >
-          <div
-            style={{
-              background: "#ffffff",
-              border: "1px solid #e1e1e1",
-              borderRadius: "12px",
-              padding: "22px",
-            }}
-          >
-            <div
-              style={{
-                color: "#777777",
-                fontSize: "12px",
-                textTransform: "uppercase",
-                fontWeight: "bold",
-                marginBottom: "8px",
-              }}
-            >
-              Archived Vehicles
-            </div>
-
-            <strong style={{ fontSize: "27px" }}>
-              {vehicleCount.toLocaleString()}
-            </strong>
-          </div>
+         
 
           <div
             style={{
@@ -606,6 +669,33 @@ if (page > totalPages && auctionCount > 0) {
 
             <strong style={{ fontSize: "27px" }}>
               {averageBid !== null ? formatPrice(averageBid) : "Unavailable"}
+            </strong>
+          </div>
+
+           <div
+            style={{
+              background: "#ffffff",
+              border: "1px solid #e1e1e1",
+              borderRadius: "12px",
+              padding: "22px",
+            }}
+          >
+            <div
+              style={{
+                color: "#777777",
+                fontSize: "12px",
+                textTransform: "uppercase",
+                fontWeight: "bold",
+                marginBottom: "8px",
+              }}
+            >
+              Latest Auction
+            </div>
+
+            <strong style={{ fontSize: "27px" }}>
+              {auctions.length > 0 && auctions[0].auction_date
+  ? formatDate(auctions[0].auction_date)
+  : "Unavailable"}
             </strong>
           </div>
         </section>

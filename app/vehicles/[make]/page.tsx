@@ -2,7 +2,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { supabase } from "../../../utils/supabase/client";
-
+import {
+  displayModel,
+  slugifyModel,
+  normalizeModelName as sharedNormalizeModelName,
+} from "../../../utils/vehicle-models";
 type Vehicle = {
   vin: string;
   year: number | null;
@@ -130,124 +134,10 @@ const SUPPORTED_MAKES: Record<
 };
 
 
-function slugifyModel(model: string) {
-  return model
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, "-")
-    .replace(/[^a-z0-9-]/g, "");
-}
 
-function displayModel(model: string) {
-  const modelMap: Record<string, string> = {
-    "2ER": "2 Series",
-    "3ER": "3 Series",
-    "4ER": "4 Series",
-    "5ER": "5 Series",
-    "6ER": "6 Series",
-    "7ER": "7 Series",
-    "8ER": "8 Series",
-  };
 
-  return modelMap[model] || model;
-}
 
-function normalizeModelName(
-  make: string,
-  model: string
-) {
-  const cleaned = model.trim();
-  const upper = cleaned.toUpperCase();
 
-  // BMW
-  if (make.toUpperCase() === "BMW") {
-    return displayModel(cleaned);
-  }
-
-  // TESLA
-  if (make.toUpperCase() === "TESLA") {
-    const teslaMap: Record<string, string> = {
-      "MODEL 3": "Model 3",
-      "MODEL Y": "Model Y",
-      "MODEL S": "Model S",
-      "MODEL X": "Model X",
-      "CYBERTRUCK": "Cybertruck",
-    };
-
-    return teslaMap[upper] || cleaned;
-  }
-
-  // MERCEDES-BENZ
-  if (
-    make.toUpperCase() === "MERCEDES-BENZ" ||
-    make.toUpperCase() === "MERCEDES"
-  ) {
-    const mercedesMap: Record<string, string> = {
-      "A-KLASSE": "A-Class",
-      "A-CLASS": "A-Class",
-
-      "C-KLASSE": "C-Class",
-      "C-CLASS": "C-Class",
-
-      "E-KLASSE": "E-Class",
-      "E-CLASS": "E-Class",
-
-      "S-KLASSE": "S-Class",
-      "S-CLASS": "S-Class",
-
-      "GLE": "GLE",
-      "GLE-CLASS": "GLE",
-
-      "GLC": "GLC",
-      "GLC-CLASS": "GLC",
-
-      "GLS-KLASSE": "GLS",
-      "GLS-CLASS": "GLS",
-
-      "GLA-KLASSE": "GLA",
-      "GLA-CLASS": "GLA",
-
-      "GLB": "GLB",
-      "GLB-CLASS": "GLB",
-
-      "CLA-KLASSE": "CLA",
-      "CLA-CLASS": "CLA",
-
-      "CLS-KLASSE": "CLS",
-      "CLS-CLASS": "CLS",
-
-      "G-KLASSE": "G-Class",
-      "G-CLASS": "G-Class",
-
-      "SL-KLASSE": "SL",
-      "SL-CLASS": "SL",
-
-      "SLK-KLASSE": "SLK",
-      "SLK-CLASS": "SLK",
-
-      "SLC-CLASS": "SLC",
-
-      "GLK-CLASS": "GLK",
-      "GL-CLASS": "GL",
-
-      "CL-CLASS": "CL",
-
-      "ML-CLASS": "ML",
-
-      "AMG-CLASS": "AMG",
-      "AMG GT": "AMG GT",
-    };
-
-    return mercedesMap[upper] || cleaned;
-  }
-
-  // Generic fallback: merge simple casing differences
-  return cleaned
-    .toLowerCase()
-    .replace(/\b\w/g, (letter) =>
-      letter.toUpperCase()
-    );
-}
 const BMW_MODEL_GROUPS = [
   "1 Series",
   "2 Series",
@@ -408,10 +298,7 @@ for (const vehicle of data || []) {
 
   if (!model) continue;
 
-  const normalizedModel = normalizeModelName(
-    databaseMake,
-    model
-  );
+  const normalizedModel = sharedNormalizeModelName(databaseMake, model);
 
   const existing = summaries.get(normalizedModel);
 
@@ -766,17 +653,37 @@ const bmwModelGroups = isBmw
           }}
         >
           <div
-            style={{
-              fontSize: "13px",
-              fontWeight: "bold",
-              textTransform: "uppercase",
-              letterSpacing: "1px",
-              color: "#666666",
-              marginBottom: "12px",
-            }}
-          >
-            Vehicle Auction Research
-          </div>
+  style={{
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    flexWrap: "wrap",
+    fontSize: "13px",
+    color: "#666666",
+    marginBottom: "12px",
+  }}
+>
+  <Link
+    href="/vehicles"
+    style={{
+      color: "#666666",
+      textDecoration: "none",
+    }}
+  >
+    Vehicles
+  </Link>
+
+  <span>›</span>
+
+  <span
+    style={{
+      fontWeight: "bold",
+      color: "#171717",
+    }}
+  >
+    {config.displayName}
+  </span>
+</div>
 
           <h1
             className="vehicle-make-title"
@@ -885,15 +792,10 @@ const bmwModelGroups = isBmw
   .map((item) => {
   const active = selectedModel === item.model;
 
-  const modelUrl = isBmw
-    ? makeArchiveUrl(
-        normalizedMakeSlug,
-        1,
-        item.model
-      )
-    : item.vehicleCount >= 5
+  const modelUrl =
+  item.vehicleCount >= 5
     ? `/vehicles/${normalizedMakeSlug}/${slugifyModel(
-        displayModel(item.model)
+        item.model
       )}`
     : makeArchiveUrl(
         normalizedMakeSlug,
@@ -917,7 +819,7 @@ const bmwModelGroups = isBmw
         whiteSpace: "nowrap",
       }}
     >
-      {item.model} ({item.vehicleCount})
+      {item.model} 
     </Link>
   );
 })}
