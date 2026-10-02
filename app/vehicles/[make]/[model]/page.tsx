@@ -124,7 +124,7 @@ const getModelsForMake = cache(async (databaseMake: string) => {
     const { data, error } = await supabase
       .from("vehicles")
       .select("model")
-      .eq("make", databaseMake)
+      .ilike("make", databaseMake)
       .not("model", "is", null)
       .range(from, from + MODEL_BATCH_SIZE - 1);
 
@@ -166,31 +166,57 @@ const getModelConfig = cache(
 
     const models = await getModelsForMake(makeConfig.databaseMake);
 
-    const modelCounts = new Map<string, number>();
+    const groupedModels = new Map<
+  string,
+  {
+    vehicleCount: number;
+    rawModels: Set<string>;
+  }
+>();
 
-    for (const model of models) {
-      modelCounts.set(model, (modelCounts.get(model) || 0) + 1);
-    }
+for (const model of models) {
+  const normalizedModel = displayModel(model);
 
-    const matchingModel = Array.from(modelCounts.entries()).find(
-      ([databaseModel, count]) =>
-        count >= MIN_MODEL_VEHICLES &&
-        slugifyModel(databaseModel) === normalizedModelSlug
-    );
+  const existingKey = Array.from(groupedModels.keys()).find(
+    (key) =>
+      key.toLowerCase() === normalizedModel.toLowerCase()
+  );
 
-    if (!matchingModel) {
-      return null;
-    }
+  const groupKey = existingKey || normalizedModel;
 
-    const [databaseModel, vehicleCount] = matchingModel;
+  const existing = groupedModels.get(groupKey);
 
-    return {
-      make: makeConfig.databaseMake,
-      model: databaseModel,
-      makeName: makeConfig.displayName,
-      modelName: displayModel(databaseModel),
-      vehicleCount,
-    };
+  if (existing) {
+    existing.vehicleCount += 1;
+    existing.rawModels.add(model);
+  } else {
+    groupedModels.set(groupKey, {
+      vehicleCount: 1,
+      rawModels: new Set([model]),
+    });
+  }
+}
+
+const matchingModel = Array.from(groupedModels.entries()).find(
+  ([modelName, summary]) =>
+    summary.vehicleCount >= MIN_MODEL_VEHICLES &&
+    slugifyModel(modelName) === normalizedModelSlug
+);
+
+if (!matchingModel) {
+  return null;
+}
+
+const [modelName, summary] = matchingModel;
+
+return {
+  make: makeConfig.databaseMake,
+  model: modelName,
+  rawModels: Array.from(summary.rawModels),
+  makeName: makeConfig.displayName,
+  modelName,
+  vehicleCount: summary.vehicleCount,
+};
   }
 );
 function formatPrice(price: number | null) {
@@ -220,8 +246,9 @@ function formatMileage(mileage: number | null) {
 async function getModelData(
   make: string,
   model: string,
+  rawModels: string[],
   page: number
-) {
+){
   const from = (page - 1) * PAGE_SIZE;
   const to = from + PAGE_SIZE - 1;
 
@@ -234,8 +261,8 @@ async function getModelData(
     .select("vin, year, make, model, trim", {
       count: "exact",
     })
-    .eq("make", make)
-    .eq("model", model);
+   .ilike("make", make)
+.in("model", rawModels);
 
   if (vehicleError) {
     console.error("Model vehicle error:", vehicleError);
@@ -400,6 +427,7 @@ const page = Math.max(1, Number(query.page) || 1);
   const { auctions, vehicleCount, auctionCount } = await getModelData(
   config.make,
   config.model,
+  config.rawModels,
   page
 );
 

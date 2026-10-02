@@ -31,6 +31,7 @@ type VehicleCard = {
 type ModelSummary = {
   model: string;
   vehicleCount: number;
+  rawModels: string[];
 };
 
 const PAGE_SIZE = 24;
@@ -151,6 +152,216 @@ function displayModel(model: string) {
   return modelMap[model] || model;
 }
 
+function normalizeModelName(
+  make: string,
+  model: string
+) {
+  const cleaned = model.trim();
+  const upper = cleaned.toUpperCase();
+
+  // BMW
+  if (make.toUpperCase() === "BMW") {
+    return displayModel(cleaned);
+  }
+
+  // TESLA
+  if (make.toUpperCase() === "TESLA") {
+    const teslaMap: Record<string, string> = {
+      "MODEL 3": "Model 3",
+      "MODEL Y": "Model Y",
+      "MODEL S": "Model S",
+      "MODEL X": "Model X",
+      "CYBERTRUCK": "Cybertruck",
+    };
+
+    return teslaMap[upper] || cleaned;
+  }
+
+  // MERCEDES-BENZ
+  if (
+    make.toUpperCase() === "MERCEDES-BENZ" ||
+    make.toUpperCase() === "MERCEDES"
+  ) {
+    const mercedesMap: Record<string, string> = {
+      "A-KLASSE": "A-Class",
+      "A-CLASS": "A-Class",
+
+      "C-KLASSE": "C-Class",
+      "C-CLASS": "C-Class",
+
+      "E-KLASSE": "E-Class",
+      "E-CLASS": "E-Class",
+
+      "S-KLASSE": "S-Class",
+      "S-CLASS": "S-Class",
+
+      "GLE": "GLE",
+      "GLE-CLASS": "GLE",
+
+      "GLC": "GLC",
+      "GLC-CLASS": "GLC",
+
+      "GLS-KLASSE": "GLS",
+      "GLS-CLASS": "GLS",
+
+      "GLA-KLASSE": "GLA",
+      "GLA-CLASS": "GLA",
+
+      "GLB": "GLB",
+      "GLB-CLASS": "GLB",
+
+      "CLA-KLASSE": "CLA",
+      "CLA-CLASS": "CLA",
+
+      "CLS-KLASSE": "CLS",
+      "CLS-CLASS": "CLS",
+
+      "G-KLASSE": "G-Class",
+      "G-CLASS": "G-Class",
+
+      "SL-KLASSE": "SL",
+      "SL-CLASS": "SL",
+
+      "SLK-KLASSE": "SLK",
+      "SLK-CLASS": "SLK",
+
+      "SLC-CLASS": "SLC",
+
+      "GLK-CLASS": "GLK",
+      "GL-CLASS": "GL",
+
+      "CL-CLASS": "CL",
+
+      "ML-CLASS": "ML",
+
+      "AMG-CLASS": "AMG",
+      "AMG GT": "AMG GT",
+    };
+
+    return mercedesMap[upper] || cleaned;
+  }
+
+  // Generic fallback: merge simple casing differences
+  return cleaned
+    .toLowerCase()
+    .replace(/\b\w/g, (letter) =>
+      letter.toUpperCase()
+    );
+}
+const BMW_MODEL_GROUPS = [
+  "1 Series",
+  "2 Series",
+  "3 Series",
+  "4 Series",
+  "5 Series",
+  "6 Series",
+  "7 Series",
+  "8 Series",
+  "Z Series",
+  "X Series",
+  "M",
+];
+
+function getBmwModelGroup(model: string) {
+  const value = displayModel(model).toUpperCase();
+
+  if (
+    value.startsWith("Z3") ||
+    value.startsWith("Z4") ||
+    value.startsWith("Z8")
+  ) {
+    return "Z Series";
+  }
+
+  if (
+    /^X[1-7]\b/.test(value) ||
+    value === "XM"
+  ) {
+    return "X Series";
+  }
+
+  if (
+    /^M[1-8]\b/.test(value) ||
+    value.startsWith("M2") ||
+    value.startsWith("M3") ||
+    value.startsWith("M4") ||
+    value.startsWith("M5") ||
+    value.startsWith("M6") ||
+    value.startsWith("M8")
+  ) {
+    return "M";
+  }
+
+  if (
+    value.startsWith("M235") ||
+    value.startsWith("M240") ||
+    value.startsWith("M340") ||
+    value.startsWith("M440") ||
+    value.startsWith("M550") ||
+    value.startsWith("M850")
+  ) {
+    return "M";
+  }
+
+  if (
+    value.startsWith("1 SERIES") ||
+    /^1\d{2}/.test(value)
+  ) {
+    return "1 Series";
+  }
+
+  if (
+    value.startsWith("2 SERIES") ||
+    /^2\d{2}/.test(value)
+  ) {
+    return "2 Series";
+  }
+
+  if (
+    value.startsWith("3 SERIES") ||
+    /^3\d{2}/.test(value)
+  ) {
+    return "3 Series";
+  }
+
+  if (
+    value.startsWith("4 SERIES") ||
+    /^4\d{2}/.test(value)
+  ) {
+    return "4 Series";
+  }
+
+  if (
+    value.startsWith("5 SERIES") ||
+    /^5\d{2}/.test(value)
+  ) {
+    return "5 Series";
+  }
+
+  if (
+    value.startsWith("6 SERIES") ||
+    /^6\d{2}/.test(value)
+  ) {
+    return "6 Series";
+  }
+
+  if (
+    value.startsWith("7 SERIES") ||
+    /^7\d{2}/.test(value)
+  ) {
+    return "7 Series";
+  }
+
+  if (
+    value.startsWith("8 SERIES") ||
+    /^8\d{2}/.test(value)
+  ) {
+    return "8 Series";
+  }
+
+  return null;
+}
+
 function formatPrice(price: number | null) {
   if (price === null) return "Price unavailable";
 
@@ -177,35 +388,57 @@ async function getModelSummaries(databaseMake: string) {
   const { data, error } = await supabase
     .from("vehicles")
     .select("model")
-    .eq("make", databaseMake);
+    .ilike("make", databaseMake);
 
   if (error) {
     console.error("Model summary error:", error);
     return [] as ModelSummary[];
   }
 
-  const counts = new Map<string, number>();
-
-  for (const vehicle of data || []) {
-    const model = vehicle.model?.trim();
-
-    if (!model) continue;
-
-    counts.set(model, (counts.get(model) || 0) + 1);
+ const summaries = new Map<
+  string,
+  {
+    vehicleCount: number;
+    rawModels: Set<string>;
   }
+>();
 
-  return Array.from(counts.entries())
-    .map(([model, vehicleCount]) => ({
-      model,
-      vehicleCount,
-    }))
-    .sort((a, b) => {
-      if (b.vehicleCount !== a.vehicleCount) {
-        return b.vehicleCount - a.vehicleCount;
-      }
+for (const vehicle of data || []) {
+  const model = vehicle.model?.trim();
 
-      return a.model.localeCompare(b.model);
+  if (!model) continue;
+
+  const normalizedModel = normalizeModelName(
+    databaseMake,
+    model
+  );
+
+  const existing = summaries.get(normalizedModel);
+
+  if (existing) {
+    existing.vehicleCount += 1;
+    existing.rawModels.add(model);
+  } else {
+    summaries.set(normalizedModel, {
+      vehicleCount: 1,
+      rawModels: new Set([model]),
     });
+  }
+}
+
+return Array.from(summaries.entries())
+  .map(([model, summary]) => ({
+    model,
+    vehicleCount: summary.vehicleCount,
+    rawModels: Array.from(summary.rawModels),
+  }))
+  .sort((a, b) => {
+    if (b.vehicleCount !== a.vehicleCount) {
+      return b.vehicleCount - a.vehicleCount;
+    }
+
+    return a.model.localeCompare(b.model);
+  });
 }
 
 async function getVehicleArchive(
@@ -238,7 +471,7 @@ async function getVehicleArchive(
         count: "exact",
       }
     )
-    .eq("make", databaseMake)
+    .ilike("make", databaseMake)
     .not("auction_date", "is", null)
     .order("auction_date", {
       ascending: false,
@@ -248,9 +481,35 @@ async function getVehicleArchive(
       ascending: false,
     });
 
-  if (selectedModel) {
-    archiveQuery = archiveQuery.eq("model", selectedModel);
+ if (selectedModel) {
+  if (BMW_MODEL_GROUPS.includes(selectedModel)) {
+    const prefixMap: Record<string, string> = {
+      "1 Series": "1",
+      "2 Series": "2",
+      "3 Series": "3",
+      "4 Series": "4",
+      "5 Series": "5",
+      "6 Series": "6",
+      "7 Series": "7",
+      "8 Series": "8",
+      "Z Series": "Z",
+      "X Series": "X",
+      "M": "M",
+    };
+
+    const prefix = prefixMap[selectedModel];
+
+    archiveQuery = archiveQuery.ilike(
+      "model",
+      `${prefix}%`
+    );
+  } else {
+    archiveQuery = archiveQuery.eq(
+      "model",
+      selectedModel
+    );
   }
+}
 
   const {
     data,
@@ -441,13 +700,30 @@ export default async function VehicleMakePage({
 
   const models = await getModelSummaries(config.databaseMake);
 
-  const requestedModel = query.model?.trim() || null;
+const requestedModel = query.model?.trim() || null;
 
-  const selectedModel =
-    requestedModel &&
-    models.some((item) => item.model === requestedModel)
-      ? requestedModel
-      : null;
+const isBmw = normalizedMakeSlug === "bmw";
+
+const selectedModel =
+  requestedModel &&
+  (
+    models.some((item) => item.model === requestedModel) ||
+    (isBmw && BMW_MODEL_GROUPS.includes(requestedModel))
+  )
+    ? requestedModel
+    : null;
+
+const bmwModelGroups = isBmw
+  ? BMW_MODEL_GROUPS.map((group) => ({
+      model: group,
+      vehicleCount: models
+        .filter((item) => getBmwModelGroup(item.model) === group)
+        .reduce(
+          (total, item) => total + item.vehicleCount,
+          0
+        ),
+    })).filter((item) => item.vehicleCount > 0)
+  : [];
 
   const { cards, totalCount } = await getVehicleArchive(
     config.databaseMake,
@@ -604,11 +880,18 @@ export default async function VehicleMakePage({
               All {config.displayName}
             </Link>
 
-           {models.map((item) => {
+           {(isBmw ? bmwModelGroups : models)
+  .filter((item) => item.vehicleCount >= 5)
+  .map((item) => {
   const active = selectedModel === item.model;
-  const hasDedicatedPage = item.vehicleCount >= 5;
 
-  const modelUrl = hasDedicatedPage
+  const modelUrl = isBmw
+    ? makeArchiveUrl(
+        normalizedMakeSlug,
+        1,
+        item.model
+      )
+    : item.vehicleCount >= 5
     ? `/vehicles/${normalizedMakeSlug}/${slugifyModel(
         displayModel(item.model)
       )}`
@@ -622,22 +905,22 @@ export default async function VehicleMakePage({
     <Link
       key={item.model}
       href={modelUrl}
-                  style={{
-                    padding: "10px 14px",
-                    borderRadius: "8px",
-                    border: "1px solid #d8d8d8",
-                    textDecoration: "none",
-                    fontSize: "14px",
-                    fontWeight: "600",
-                    color: active ? "#ffffff" : "#171717",
-                    background: active ? "#171717" : "#ffffff",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {displayModel(item.model)} ({item.vehicleCount})
-                </Link>
-              );
-            })}
+      style={{
+        padding: "10px 14px",
+        borderRadius: "8px",
+        border: "1px solid #d8d8d8",
+        textDecoration: "none",
+        fontSize: "14px",
+        fontWeight: "600",
+        color: active ? "#ffffff" : "#171717",
+        background: active ? "#171717" : "#ffffff",
+        whiteSpace: "nowrap",
+      }}
+    >
+      {item.model} ({item.vehicleCount})
+    </Link>
+  );
+})}
           </div>
 
           
