@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 type MultipleLotResult = {
   auction_source: string;
@@ -406,35 +407,34 @@ records by VIN, lot number, make or model.
             }}
           >
             {makes.map((make) => (
-              <button
-                key={make.slug}
-               onClick={() =>
-  router.push(`/vehicles/${make.slug}`)
-}
-                style={{
-                  padding: "9px 14px",
-                  background: "#ffffff",
-                  border: "1px solid #d8d8d8",
-                  borderRadius: "8px",
-                  cursor: "pointer",
-                  fontSize: "14px",
-                  fontWeight: "600",
-                  color: "#171717",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {make.name}
+  <Link
+    key={make.slug}
+    href={`/vehicles/${make.slug}`}
+    style={{
+      padding: "9px 14px",
+      background: "#ffffff",
+      border: "1px solid #d8d8d8",
+      borderRadius: "8px",
+      fontSize: "14px",
+      fontWeight: "600",
+      color: "#171717",
+      whiteSpace: "nowrap",
+      textDecoration: "none",
+    }}
+  >
+    {make.name}
 
-                <span
-                  style={{
-                    marginLeft: "8px",
-                    color: "#888",
-                  }}
-                >
-                  →
-                </span>
-              </button>
-            ))}
+    <span
+      style={{
+        marginLeft: "8px",
+        color: "#888",
+      }}
+    >
+      →
+    </span>
+  </Link>
+))}
+          
           </div>
         </div>
       </section>
@@ -669,22 +669,21 @@ records by VIN, lot number, make or model.
   }}
 >
   <div>
-    VIN:{" "}
-    <span
-      onClick={(e) => {
-        e.stopPropagation();
-        router.push(`/vin/${lot.vin}`);
-      }}
-      style={{
-        color: "#171717",
-        fontWeight: "600",
-        textDecoration: "underline",
-        cursor: "pointer",
-      }}
-    >
-      {lot.vin}
-    </span>
-  </div>
+  VIN:{" "}
+  <Link
+    href={`/vin/${lot.vin}`}
+    onClick={(e) => {
+      e.stopPropagation();
+    }}
+    style={{
+      color: "#171717",
+      fontWeight: "600",
+      textDecoration: "underline",
+    }}
+  >
+    {lot.vin}
+  </Link>
+</div>
 
   {lot.primary_damage && (
     <div style={{ marginTop: "6px" }}>

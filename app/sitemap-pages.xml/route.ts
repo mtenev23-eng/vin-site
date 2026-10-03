@@ -8,7 +8,7 @@ import { supabase } from "../../utils/supabase/client";
 const BASE_URL = "https://salvagevinhistory.com";
 const BATCH_SIZE = 1000;
 const MIN_MODEL_VEHICLES = 5;
-
+const VIN_ARCHIVE_PAGE_SIZE = 24;
 const MAKE_SLUGS: Record<string, string> = {
   TOYOTA: "toyota",
   FORD: "ford",
@@ -199,7 +199,9 @@ async function fetchAllVehicles() {
 
 export async function GET() {
   const vehicles = await fetchAllVehicles();
-
+const vinArchivePageCount = Math.ceil(
+  vehicles.length / VIN_ARCHIVE_PAGE_SIZE
+);
   const urls: {
     url: string;
     lastModified?: Date;
@@ -210,7 +212,15 @@ export async function GET() {
     { url: `${BASE_URL}/faq` },
     { url: `${BASE_URL}/removal-policy` },
   ];
-
+for (
+  let page = 2;
+  page <= vinArchivePageCount;
+  page++
+) {
+  urls.push({
+    url: `${BASE_URL}/vin?page=${page}`,
+  });
+}
   for (const makeSlug of Object.values(MAKE_SLUGS)) {
     urls.push({
       url: `${BASE_URL}/vehicles/${makeSlug}`,
