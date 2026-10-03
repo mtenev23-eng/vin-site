@@ -2,6 +2,7 @@ import Link from "next/link";
 import { supabase } from "../../../utils/supabase/client";
 import VinPhotoGallery from "./VinPhotoGallery";
 import RemoveListingButton from "../../components/RemoveListingButton";
+import { slugifyModel } from "../../../utils/vehicle-models";
 type Vehicle = {
   vin: string;
   year: number | null;
@@ -86,6 +87,61 @@ async function getVehicleHistory(
     vehicle,
     lots: lots || [],
   };
+}
+async function getSimilarLots(
+  make: string | null,
+  model: string | null,
+  currentVin: string
+) {
+  if (!make || !model) {
+    return [];
+  }
+
+  const { data, error } = await supabase
+    .from("vehicle_auction_archive")
+    .select(`
+      auction_id,
+      auction_source,
+      lot_number,
+      vin,
+      final_bid,
+      auction_date,
+      mileage,
+      primary_damage,
+      image_urls,
+      year,
+      make,
+      model,
+      trim
+    `)
+    .eq("make", make)
+    .eq("model", model)
+    .neq("vin", currentVin)
+    .not("auction_date", "is", null)
+    .order("auction_date", {
+      ascending: false,
+      nullsFirst: false,
+    })
+    .limit(24);
+
+  if (error) {
+    console.error("Similar VIN lookup error:", error);
+    return [];
+  }
+
+  const uniqueVins = new Map<string, (typeof data)[number]>();
+
+  for (const row of data || []) {
+    if (!uniqueVins.has(row.vin)) {
+      uniqueVins.set(row.vin, row);
+    }
+
+    if (uniqueVins.size === 8) {
+      break;
+    }
+  }
+
+  return Array.from(uniqueVins.values());
 }
 
 function formatMileage(value: number | null) {
@@ -334,7 +390,20 @@ export default async function VinPage({
 ]
   .filter(Boolean)
   .join(" ");
+const makeSlug = vehicle.make
+  ? vehicle.make
+      .toLowerCase()
+      .trim()
+      .replace(/&/g, "and")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+  : null;
 
+  const similarLots = await getSimilarLots(
+  vehicle.make,
+  vehicle.model,
+  vehicle.vin
+);
   const totalPhotos = lots.reduce(
     (total, lot) =>
       total + (lot.image_urls?.length || 0),
@@ -478,6 +547,7 @@ const auctionSummary = latestLot
       </div>
 
       <h1
+      
         className="vin-vehicle-title"
         style={{
           fontSize: "42px",
@@ -488,6 +558,26 @@ const auctionSummary = latestLot
       >
         {vehicleName || vehicle.vin}
       </h1>
+
+{makeSlug && vehicle.make && (
+  <div
+    style={{
+      marginBottom: "14px",
+      fontSize: "14px",
+    }}
+  >
+    <Link
+      href={`/vehicles/${makeSlug}`}
+      style={{
+        color: "#555",
+        textDecoration: "underline",
+        fontWeight: "600",
+      }}
+    >
+      Browse more {vehicle.make} auction records
+    </Link>
+  </div>
+)}
 
       {vehicle.trim && (
   <div
@@ -1716,6 +1806,7 @@ const auctionSummary = latestLot
               margin: 0,
             }}
           >
+
             Archived auction records reflect information
             associated with the vehicle at the time of each
             auction listing. A vehicle's condition, mileage,
@@ -1723,6 +1814,214 @@ const auctionSummary = latestLot
             since the recorded auction date.
           </p>
         </section>
+        
+            {similarLots.length > 0 && (
+  <section
+    style={{
+      marginTop: "48px",
+      marginBottom: "48px",
+    }}
+  >
+    <div
+      style={{
+        marginBottom: "18px",
+      }}
+    >
+      <h2
+        style={{
+          fontSize: "28px",
+          margin: "0 0 7px",
+        }}
+      >
+        Similar {vehicle.make}{" "}
+        {vehicle.model ? displayModel(vehicle.model) : ""} Auction Sales
+      </h2>
+
+      <p
+        style={{
+          color: "#666",
+          fontSize: "14px",
+          lineHeight: 1.6,
+          margin: 0,
+        }}
+      >
+        Compare recent archived auction results for similar vehicles.
+      </p>
+    </div>
+
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+        gap: "16px",
+      }}
+    >
+      {similarLots.map((similarLot) => {
+        const similarVinUrl = `/vin/${similarLot.vin}`;
+
+        const similarVehicleName = [
+          similarLot.year,
+          similarLot.make,
+          similarLot.model
+            ? displayModel(similarLot.model)
+            : null,
+        ]
+          .filter(Boolean)
+          .join(" ");
+
+        return (
+          <article
+            key={similarLot.auction_id}
+            style={{
+              background: "#ffffff",
+              border: "1px solid #e1e1e1",
+              borderRadius: "10px",
+              overflow: "hidden",
+            }}
+          >
+            <Link
+              href={similarVinUrl}
+              style={{
+                display: "block",
+                color: "inherit",
+                textDecoration: "none",
+              }}
+            >
+              <div
+                style={{
+                  height: "170px",
+                  background: "#eeeeee",
+                }}
+              >
+                {similarLot.image_urls?.[0] ? (
+                  <img
+                    src={similarLot.image_urls[0]}
+                    alt={`${similarVehicleName} auction vehicle`}
+                    loading="lazy"
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                      display: "block",
+                    }}
+                  />
+                ) : null}
+              </div>
+
+              <div
+                style={{
+                  padding: "16px",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: "12px",
+                    color: "#777",
+                    fontWeight: "700",
+                    textTransform: "uppercase",
+                    marginBottom: "8px",
+                  }}
+                >
+                  {similarLot.auction_source}
+                  {similarLot.auction_date
+                    ? ` • ${formatDate(similarLot.auction_date)}`
+                    : ""}
+                </div>
+
+                <h3
+                  style={{
+                    fontSize: "18px",
+                    margin: "0 0 5px",
+                  }}
+                >
+                  {similarVehicleName}
+                </h3>
+
+                {similarLot.trim && (
+                  <div
+                    style={{
+                      fontSize: "14px",
+                      fontWeight: "600",
+                      color: "#555",
+                      marginBottom: "16px",
+                    }}
+                  >
+                    {similarLot.trim.replace(
+                      new RegExp(`^${similarLot.year}\\s+`, "i"),
+                      ""
+                    )}
+                  </div>
+                )}
+
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: "12px",
+                  }}
+                >
+                  <div>
+                    <div
+                      style={{
+                        fontSize: "12px",
+                        color: "#777",
+                        marginBottom: "3px",
+                      }}
+                    >
+                      Final Bid
+                    </div>
+
+                    <strong>
+                      {formatBid(similarLot.final_bid)}
+                    </strong>
+                  </div>
+
+                  <div>
+                    <div
+                      style={{
+                        fontSize: "12px",
+                        color: "#777",
+                        marginBottom: "3px",
+                      }}
+                    >
+                      Mileage
+                    </div>
+
+                    <strong>
+                      {formatMileage(similarLot.mileage)}
+                    </strong>
+                  </div>
+                </div>
+              </div>
+            </Link>
+          </article>
+        );
+      })}
+        </div>
+
+    {makeSlug && vehicle.model && (
+      <div
+        style={{
+          marginTop: "22px",
+        }}
+      >
+        <Link
+          href={`/vehicles/${makeSlug}/${slugifyModel(vehicle.model)}`}
+          style={{
+            display: "inline-block",
+            color: "#171717",
+            fontSize: "16px",
+            fontWeight: "800",
+            textDecoration: "none",
+            padding: "10px 0",
+          }}
+        >
+          View all {vehicle.make} {displayModel(vehicle.model)} auctions →
+        </Link>
+      </div>
+    )}
+  </section>
+)}
             </div>
 
       <style>{`
