@@ -361,49 +361,42 @@ records by VIN, lot number, make or model.
             padding: "30px 24px 34px",
           }}
         >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "flex-end",
-              justifyContent: "space-between",
-              flexWrap: "wrap",
-              gap: "12px",
-              marginBottom: "18px",
-            }}
-          >
-            <div>
-              <div
-                style={{
-                  fontSize: "12px",
-                  fontWeight: "bold",
-                  textTransform: "uppercase",
-                  letterSpacing: "1px",
-                  color: "#666",
-                  marginBottom: "6px",
-                }}
-              >
-                Browse Vehicles
-              </div>
+         <div
+  style={{
+    marginBottom: "18px",
+  }}
+>
+  <div
+    style={{
+      fontSize: "12px",
+      fontWeight: "bold",
+      textTransform: "uppercase",
+      letterSpacing: "1px",
+      color: "#666",
+      marginBottom: "6px",
+    }}
+  >
+    Browse Vehicles
+  </div>
 
-              <h2
-                style={{
-                  fontSize: "26px",
-                  margin: 0,
-                }}
-              >
-                Browse by Make
-              </h2>
-            </div>
+  <h2
+    style={{
+      fontSize: "26px",
+      margin: "0 0 7px",
+    }}
+  >
+    Browse by Make
+  </h2>
 
-            <div
-              style={{
-                color: "#777",
-                fontSize: "14px",
-              }}
-            >
-              Explore auction records by manufacturer
-            </div>
-          </div>
+  <div
+    style={{
+      color: "#777",
+      fontSize: "14px",
+    }}
+  >
+    Explore auction records by manufacturer
+  </div>
+</div>
 
           <div
             style={{

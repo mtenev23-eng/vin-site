@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { supabase } from "../../../utils/supabase/client";
 
 export async function GET() {
+  
+
   const { data: lots, error } = await supabase
     .from("auction_lots")
     .select(`
@@ -20,6 +22,8 @@ export async function GET() {
     })
     .limit(12);
 
+ 
+
   if (error) {
     console.error("Recent auctions error:", error);
 
@@ -35,11 +39,15 @@ export async function GET() {
 
   const vins = [...new Set(lots.map((lot) => lot.vin))];
 
+  
+
   const { data: vehicles, error: vehicleError } =
     await supabase
       .from("vehicles")
       .select("vin, year, make, model")
       .in("vin", vins);
+
+ 
 
   if (vehicleError) {
     console.error(
@@ -64,6 +72,7 @@ export async function GET() {
     ...lot,
     vehicle: vehicleMap.get(lot.vin) || null,
   }));
+
 
   return NextResponse.json(results);
 }
