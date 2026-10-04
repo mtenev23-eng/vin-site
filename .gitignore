@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+# crawler runtime data
+/data/*.log
+/data/*checkpoint*.json
+/data/opendatacar-last-run.json

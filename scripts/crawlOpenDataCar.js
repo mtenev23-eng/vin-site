@@ -1420,6 +1420,108 @@ async function main() {
 
   let failed = 0;
 let consecutiveOldPages = 0;
+
+const runStartedAt = new Date();
+const RUN_SUMMARY_FILE = path.join(
+  DATA_DIR,
+  "opendatacar-last-run.json"
+);
+
+function saveRunSummary(status) {
+  checkpoint.completedUrls = [...completed];
+
+  saveJson(
+    CHECKPOINT_FILE,
+    checkpoint
+  );
+
+  const summary = {
+    status,
+    startedAt: runStartedAt.toISOString(),
+    finishedAt: new Date().toISOString(),
+    catalogPagesScanned: pagesScanned,
+    vehiclePagesChecked,
+    imported,
+    duplicates,
+    skippedPrice,
+    skippedDate,
+    skippedInvalid,
+    skippedImages,
+    failed,
+    completedUrlsTotal: completed.size,
+  };
+
+  saveJson(
+    RUN_SUMMARY_FILE,
+    summary
+  );
+
+  console.log("");
+  console.log(
+    "========================================"
+  );
+  console.log(
+    status === "interrupted"
+      ? "CRAWLER INTERRUPTED"
+      : "RUN SUMMARY SAVED"
+  );
+  console.log(
+    "========================================"
+  );
+  console.log(
+    `Catalog pages scanned: ${pagesScanned}`
+  );
+  console.log(
+    `Vehicle pages checked: ${vehiclePagesChecked}`
+  );
+  console.log(
+    `Imported: ${imported}`
+  );
+  console.log(
+    `Duplicates: ${duplicates}`
+  );
+  console.log(
+    `Skipped below $${MIN_FINAL_BID}: ${skippedPrice}`
+  );
+  console.log(
+    `Skipped old date: ${skippedDate}`
+  );
+  console.log(
+    `Skipped invalid: ${skippedInvalid}`
+  );
+  console.log(
+    `Skipped no images: ${skippedImages}`
+  );
+  console.log(
+    `Failed: ${failed}`
+  );
+  console.log(
+    `Completed URLs total: ${completed.size}`
+  );
+  console.log(
+    `Summary: ${RUN_SUMMARY_FILE}`
+  );
+  console.log(
+    `Checkpoint: ${CHECKPOINT_FILE}`
+  );
+  console.log(
+  "========================================"
+);
+
+}
+
+process.once("SIGINT", () => {
+  console.log("");
+  console.log(
+    "Ctrl+C received. Saving checkpoint and run summary..."
+  );
+
+  saveRunSummary(
+    "interrupted"
+  );
+
+  process.exit(130);
+});
   console.log("");
   console.log(
     "========================================"
@@ -1828,8 +1930,10 @@ if (consecutiveOldPages >= 3) {
   );
 
   console.log(
-    "========================================"
-  );
+  "========================================"
+);
+
+saveRunSummary("completed");
 }
 
 main().catch((error) => {
