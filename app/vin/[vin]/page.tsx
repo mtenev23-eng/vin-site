@@ -3,6 +3,7 @@ import { supabase } from "../../../utils/supabase/client";
 import VinPhotoGallery from "./VinPhotoGallery";
 import RemoveListingButton from "../../components/RemoveListingButton";
 import { slugifyModel } from "../../../utils/vehicle-models";
+
 type Vehicle = {
   vin: string;
   year: number | null;
@@ -173,6 +174,36 @@ function formatDate(value: string | null) {
     day: "numeric",
   });
 }
+function formatLocation(value: string | null) {
+  if (!value) {
+    return null;
+  }
+
+  const cleaned = value.trim();
+
+  const stateCityMatch = cleaned.match(
+    /^([A-Z]{2})\s*-\s*(.+)$/i
+  );
+
+  if (stateCityMatch) {
+    const state = stateCityMatch[1].toUpperCase();
+
+    const city = stateCityMatch[2]
+      .trim()
+      .toLowerCase()
+      .replace(/\b\w/g, (char) =>
+        char.toUpperCase()
+      );
+
+    return `${city}, ${state}`;
+  }
+
+  return cleaned
+    .toLowerCase()
+    .replace(/\b\w/g, (char) =>
+      char.toUpperCase()
+    );
+}
 function displayModel(model: string | null | undefined) {
   if (!model) return null;
 
@@ -187,6 +218,181 @@ function displayModel(model: string | null | undefined) {
   };
 
   return modelMap[model.toUpperCase()] || model;
+}
+
+function titleCaseValue(value: string | null | undefined) {
+  if (!value) return null;
+
+  const keepUppercase = new Set([
+    "BMW",
+    "GMC",
+    "RAM",
+    "AMG",
+    "GT",
+    "GTI",
+    "EV",
+    "AWD",
+    "FWD",
+    "RWD",
+    "4WD",
+    "CVT",
+    "VIN",
+  ]);
+
+  return value
+    .toLowerCase()
+    .replace(/\b\w+/g, (word) => {
+      const upper = word.toUpperCase();
+
+      if (keepUppercase.has(upper)) {
+        return upper;
+      }
+
+      return word.charAt(0).toUpperCase() + word.slice(1);
+    });
+}
+
+type ComparableStats = {
+  average: number;
+  count: number;
+  minYear: number | null;
+  maxYear: number | null;
+};
+
+type ComparableRow = {
+  auction_id: number;
+  final_bid: number | null;
+  year: number | null;
+};
+
+async function getComparableStats(
+  vehicle: Vehicle,
+  currentLotId: number
+): Promise<ComparableStats | null> {
+  if (!vehicle.make || !vehicle.model) {
+    return null;
+  }
+
+  async function fetchComparables(
+    minYear?: number,
+    maxYear?: number
+  ): Promise<ComparableRow[]> {
+    let query = supabase
+      .from("vehicle_auction_archive")
+      .select(`
+        auction_id,
+        final_bid,
+        year
+      `)
+      .eq("make", vehicle.make)
+      .eq("model", vehicle.model)
+      .neq("auction_id", currentLotId)
+      .not("final_bid", "is", null)
+      .gte("final_bid", 1000)
+      .order("auction_date", {
+        ascending: false,
+        nullsFirst: false,
+      })
+      .limit(100);
+
+    if (
+      minYear !== undefined &&
+      maxYear !== undefined
+    ) {
+      query = query
+        .gte("year", minYear)
+        .lte("year", maxYear);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error(
+        "Comparable auction lookup error:",
+        error
+      );
+
+      return [];
+    }
+
+    return ((data || []) as ComparableRow[]).filter(
+      (row) =>
+        row.final_bid !== null &&
+        Number(row.final_bid) >= 1000
+    );
+  }
+
+  let comparables: ComparableRow[] = [];
+
+  /*
+    First preference:
+    same make + model + exact model year.
+  */
+  if (vehicle.year !== null) {
+    comparables = await fetchComparables(
+      vehicle.year,
+      vehicle.year
+    );
+  }
+
+  /*
+    If we don't have enough exact-year sales,
+    expand to +/- 2 model years.
+  */
+  if (
+    comparables.length < 5 &&
+    vehicle.year !== null
+  ) {
+    comparables = await fetchComparables(
+      vehicle.year - 2,
+      vehicle.year + 2
+    );
+  }
+
+  /*
+    If year is unavailable, use make + model.
+  */
+  if (
+    comparables.length < 5 &&
+    vehicle.year === null
+  ) {
+    comparables = await fetchComparables();
+  }
+
+  if (comparables.length < 5) {
+    return null;
+  }
+
+  const bids = comparables.map(
+    (row) => Number(row.final_bid)
+  );
+
+  const average = Math.round(
+    bids.reduce(
+      (total, bid) => total + bid,
+      0
+    ) / bids.length
+  );
+
+  const years = comparables
+    .map((row) => row.year)
+    .filter(
+      (year): year is number =>
+        typeof year === "number"
+    );
+
+  return {
+    average,
+    count: comparables.length,
+    minYear:
+      years.length > 0
+        ? Math.min(...years)
+        : null,
+    maxYear:
+      years.length > 0
+        ? Math.max(...years)
+        : null,
+  };
 }
 export async function generateMetadata({
   params,
@@ -411,6 +617,12 @@ const makeSlug = vehicle.make
   );
 
   const latestLot = lots[0] || null;
+  const comparableStats = latestLot
+  ? await getComparableStats(
+      vehicle,
+      latestLot.id
+    )
+  : null;
 const auctionSources = Array.from(
   new Set(
     lots
@@ -419,44 +631,186 @@ const auctionSources = Array.from(
   )
 );
 
-const sourceText =
-  auctionSources.length === 0
-    ? "auction"
-    : auctionSources.length === 1
-      ? auctionSources[0]
-      : auctionSources.join(" and ");
+const cleanedTrim = titleCaseValue(
+  vehicle.trim
+    ?.replace(
+      new RegExp(`^${vehicle.year}\\s+`, "i"),
+      ""
+    )
+    .trim()
+);
 
-const auctionSummary = latestLot
-  ? `${vehicleName || "This vehicle"} has ${lots.length} archived auction ${
-      lots.length === 1 ? "record" : "records"
-    }${auctionSources.length > 0 ? ` from ${sourceText}` : ""}. ${
-      latestLot.auction_date
-        ? `The most recent archived appearance was on ${formatDate(
-            latestLot.auction_date
-          )}`
-        : "The most recent archived appearance"
-    }${
-      latestLot.location
-        ? ` in ${latestLot.location}`
-        : ""
-    }${
-      latestLot.mileage !== null
-        ? ` with ${formatMileage(latestLot.mileage)}`
-        : ""
-    }${
-      latestLot.primary_damage
-        ? ` and primary damage reported as ${latestLot.primary_damage}`
-        : ""
-    }${
-      latestLot.final_bid !== null
-        ? `. The archived record shows a final bid of ${formatBid(
-            latestLot.final_bid
-          )}`
-        : ""
-    }.`
+const overviewVehicleName = [
+  vehicle.year,
+  titleCaseValue(vehicle.make),
+  titleCaseValue(displayModel(vehicle.model)),
+]
+  .filter(Boolean)
+  .join(" ");
+
+let marketComparison: string | null = null;
+
+if (
+  latestLot &&
+  latestLot.final_bid !== null &&
+  comparableStats
+) {
+  const difference =
+    latestLot.final_bid - comparableStats.average;
+
+  const absoluteDifference = Math.abs(difference);
+
+  const comparableYearText =
+    comparableStats.minYear !== null &&
+    comparableStats.maxYear !== null
+      ? comparableStats.minYear === comparableStats.maxYear
+        ? `${comparableStats.minYear} `
+        : `${comparableStats.minYear}-${comparableStats.maxYear} `
+      : "";
+
+  const comparableLabel = `${comparableYearText}${
+    titleCaseValue(vehicle.make) || vehicle.make
+  } ${
+    titleCaseValue(displayModel(vehicle.model)) ||
+    displayModel(vehicle.model)
+  }`
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (absoluteDifference < 250) {
+    marketComparison =
+      `The archived final bid was ${formatBid(
+        latestLot.final_bid
+      )}, broadly in line with the ${formatBid(
+        comparableStats.average
+      )} average for ${comparableLabel} auction records, based on ${
+        comparableStats.count
+      } comparable records.`;
+  } else {
+    marketComparison =
+      `The archived final bid was ${formatBid(
+        latestLot.final_bid
+      )}, which was ${formatBid(absoluteDifference)} ${
+        difference > 0 ? "above" : "below"
+      } the ${formatBid(
+        comparableStats.average
+      )} average for ${comparableLabel} auction records, based on ${
+        comparableStats.count
+      } comparable records.`;
+  }
+}
+
+const vehicleDetailParts = [
+  latestLot?.engine
+    ? `${latestLot.engine} engine`
+    : null,
+
+  latestLot?.transmission
+    ? `${titleCaseValue(latestLot.transmission)} transmission`
+    : null,
+
+  latestLot?.drivetrain
+    ? titleCaseValue(latestLot.drivetrain)
+    : null,
+
+  latestLot?.fuel
+    ? `${titleCaseValue(latestLot.fuel)} fuel`
+    : null,
+].filter(Boolean);
+
+const conditionParts = [
+  latestLot?.primary_damage
+    ? `primary damage listed as ${titleCaseValue(
+        latestLot.primary_damage
+      )}`
+    : null,
+
+  latestLot?.secondary_damage &&
+  latestLot.secondary_damage.toUpperCase() !== "UNKNOWN"
+    ? `secondary damage listed as ${titleCaseValue(
+        latestLot.secondary_damage
+      )}`
+    : null,
+
+  latestLot?.start_code
+    ? `a start code of ${titleCaseValue(latestLot.start_code)}`
+    : null,
+].filter(Boolean);
+
+const vehicleOverview = latestLot
+  ? [
+      `${overviewVehicleName || "This vehicle"}${
+        cleanedTrim
+          ? ` ${cleanedTrim}`
+          : ""
+      } is archived under VIN ${vehicle.vin}.`,
+
+      vehicleDetailParts.length > 0
+        ? `Reported specifications include ${vehicleDetailParts.join(
+            ", "
+          )}.`
+        : null,
+
+      `${
+        latestLot.auction_source
+          ? `The most recent archived auction appearance was recorded through ${latestLot.auction_source}`
+          : "The most recent archived auction appearance"
+      }${
+        latestLot.auction_date
+          ? ` on ${formatDate(latestLot.auction_date)}`
+          : ""
+      }${
+        latestLot.location
+  ? ` in ${formatLocation(latestLot.location)}`
+  : ""
+      }${
+        latestLot.mileage !== null
+          ? ` with ${formatMileage(latestLot.mileage)}`
+          : ""
+      }.`,
+
+      conditionParts.length > 0
+        ? `The auction record reported ${conditionParts.join(
+            ", "
+          )}.`
+        : null,
+
+      marketComparison ||
+        (latestLot.final_bid !== null
+          ? `The archived final bid was ${formatBid(
+              latestLot.final_bid
+            )}.`
+          : null),
+
+      latestLot.sale_document
+        ? `The sale document was listed as ${latestLot.sale_document}.`
+        : null,
+
+      latestLot.acv !== null
+        ? `The reported actual cash value was ${formatBid(
+            latestLot.acv
+          )}${
+            latestLot.estimated_repair_cost !==
+            null
+              ? `, with estimated repair costs of ${formatBid(
+                  latestLot.estimated_repair_cost
+                )}`
+              : ""
+          }.`
+        : latestLot.estimated_repair_cost !==
+            null
+          ? `Estimated repair costs were reported at ${formatBid(
+              latestLot.estimated_repair_cost
+            )}.`
+          : null,
+    ]
+
+    
+      .filter(Boolean)
+      .join(" ")
   : `${vehicleName || "This vehicle"} is archived under VIN ${
       vehicle.vin
-    }, but no auction lot details are currently available.`;
+    }.`;
   return (
     <main
       style={{
@@ -974,7 +1328,7 @@ const auctionSummary = latestLot
                 fontSize: "14px",
               }}
             >
-              {latestLot.location}
+              {formatLocation(latestLot.location)}
             </strong>
           </div>
         )}
@@ -1088,7 +1442,52 @@ const auctionSummary = latestLot
   </section>
 )}
        
+{/* VEHICLE OVERVIEW */}
 
+<section
+  style={{
+    marginTop: "28px",
+    marginBottom: "38px",
+    padding: "26px 28px",
+    background: "#f6f7f8",
+    border: "1px solid #e6e6e6",
+    borderRadius: "10px",
+  }}
+>
+  <div
+    style={{
+      fontSize: "12px",
+      fontWeight: "700",
+      textTransform: "uppercase",
+      letterSpacing: "0.8px",
+      color: "#777",
+      marginBottom: "8px",
+    }}
+  >
+    Vehicle Overview
+  </div>
+
+  <h2
+    style={{
+      margin: "0 0 12px",
+      fontSize: "24px",
+    }}
+  >
+    About This {titleCaseValue(vehicle.make) || "Vehicle"}
+  </h2>
+
+  <p
+    style={{
+      margin: 0,
+      maxWidth: "1000px",
+      color: "#555",
+      fontSize: "15px",
+      lineHeight: 1.75,
+    }}
+  >
+    {vehicleOverview}
+  </p>
+</section>
       {/* AUCTION HISTORY */}
 
 {lots.length !== 1 && (
