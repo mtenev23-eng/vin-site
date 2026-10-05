@@ -173,8 +173,8 @@ if (searchQuery) {
       );
     } else {
       vehicleQuery = vehicleQuery.or(
-        `make.ilike.%${term}%,model.ilike.%${term}%,trim.ilike.%${term}%`
-      );
+  `vin.ilike.%${term}%,make.ilike.%${term}%,model.ilike.%${term}%,trim.ilike.%${term}%`
+);
     }
   }
 }
