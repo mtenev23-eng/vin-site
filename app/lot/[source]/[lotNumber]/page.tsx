@@ -1,9 +1,10 @@
 import Link from "next/link";
+import { cache } from "react";
 
 import { supabase } from "../../../../utils/supabase/client";
 import RemoveListingButton from "../../../components/RemoveListingButton";
 import AuctionPhotoGallery from "../../../components/AuctionPhotoGallery";
-
+export const revalidate = 86400;
 
 type AuctionLot = {
 
@@ -87,7 +88,7 @@ type LotRecord = {
 
 
 
-async function getLot(
+const getLot = cache(async function getLot(
 
   source: string,
 
@@ -157,15 +158,11 @@ async function getLot(
 
 
 
-  return {
-
-    lot,
-
-    vehicle: vehicle || null,
-
-  };
-
-}
+return {
+  lot,
+  vehicle: vehicle || null,
+};
+});
 async function getSimilarLots(
   make: string | null,
   model: string | null,

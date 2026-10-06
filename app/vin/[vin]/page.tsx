@@ -1,9 +1,10 @@
+import { cache } from "react";
 import Link from "next/link";
 import { supabase } from "../../../utils/supabase/client";
 import VinPhotoGallery from "./VinPhotoGallery";
 import RemoveListingButton from "../../components/RemoveListingButton";
 import { slugifyModel } from "../../../utils/vehicle-models";
-
+export const revalidate = 86400;
 type Vehicle = {
   vin: string;
   year: number | null;
@@ -48,7 +49,7 @@ type VehicleHistory = {
   lots: AuctionLot[];
 };
 
-async function getVehicleHistory(
+const getVehicleHistory = cache(async function getVehicleHistory(
   vin: string
 ): Promise<VehicleHistory | null> {
   const cleanedVin = vin.trim().toUpperCase();
@@ -85,10 +86,10 @@ async function getVehicleHistory(
   }
 
   return {
-    vehicle,
-    lots: lots || [],
-  };
-}
+  vehicle,
+  lots: lots || [],
+};
+});
 async function getSimilarLots(
   make: string | null,
   model: string | null,
@@ -811,6 +812,66 @@ const vehicleOverview = latestLot
   : `${vehicleName || "This vehicle"} is archived under VIN ${
       vehicle.vin
     }.`;
+
+    const datedLots = lots.filter(
+  (lot) => lot.auction_date
+);
+
+const earliestLot =
+  datedLots.length > 0
+    ? datedLots[datedLots.length - 1]
+    : null;
+
+const archivedBids = lots
+  .map((lot) => lot.final_bid)
+  .filter(
+    (bid): bid is number =>
+      typeof bid === "number" && bid >= 1000
+  );
+
+const lowestArchivedBid =
+  archivedBids.length > 0
+    ? Math.min(...archivedBids)
+    : null;
+
+const highestArchivedBid =
+  archivedBids.length > 0
+    ? Math.max(...archivedBids)
+    : null;
+
+const historySummary =
+  lots.length > 1
+    ? [
+        `This VIN has ${lots.length} archived auction appearances${
+          auctionSources.length > 0
+            ? ` across ${auctionSources.join(" and ")}`
+            : ""
+        }.`,
+
+        earliestLot?.auction_date &&
+        latestLot?.auction_date
+          ? `The available history spans from ${formatDate(
+              earliestLot.auction_date
+            )} through ${formatDate(
+              latestLot.auction_date
+            )}.`
+          : null,
+
+        lowestArchivedBid !== null &&
+        highestArchivedBid !== null &&
+        lowestArchivedBid !== highestArchivedBid
+          ? `Archived final bids range from ${formatBid(
+              lowestArchivedBid
+            )} to ${formatBid(highestArchivedBid)}.`
+          : lowestArchivedBid !== null
+            ? `The available archived final bid was ${formatBid(
+                lowestArchivedBid
+              )}.`
+            : null,
+      ]
+        .filter(Boolean)
+        .join(" ")
+    : null;
   return (
     <main
       style={{
@@ -865,6 +926,8 @@ const vehicleOverview = latestLot
       </header>
 
       {/* VEHICLE HERO */}
+
+
 
 <section
   style={{
@@ -1511,17 +1574,16 @@ const vehicleOverview = latestLot
     </h2>
 
     <p
-      style={{
-        color: "#666",
-        fontSize: "15px",
-        lineHeight: 1.6,
-        margin: 0,
-      }}
-    >
-      {lots.length === 1
-        ? `1 archived auction appearance associated with VIN ${vehicle.vin}.`
-        : `${lots.length} archived auction appearances associated with VIN ${vehicle.vin}.`}
-    </p>
+  style={{
+    color: "#666",
+    fontSize: "15px",
+    lineHeight: 1.6,
+    margin: 0,
+  }}
+>
+  {historySummary ||
+    `${lots.length} archived auction appearances associated with VIN ${vehicle.vin}.`}
+</p>
   </div>
 
   {lots.length === 0 ? (
