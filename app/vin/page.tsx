@@ -89,10 +89,7 @@ export async function generateMetadata({
     };
   }
 
-  const canonical =
-    page === 1
-      ? `${SITE_URL}/vin`
-      : `${SITE_URL}/vin?page=${page}`;
+ const canonical = `${SITE_URL}/vin`;
 
   const title =
     page === 1
@@ -111,9 +108,9 @@ export async function generateMetadata({
       canonical,
     },
     robots: {
-      index: true,
-      follow: true,
-    },
+  index: page === 1,
+  follow: true,
+},
     openGraph: {
       title,
       description,
