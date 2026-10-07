@@ -200,12 +200,110 @@ async function getSimilarLots(
     .limit(8);
 
   if (error) {
-    console.error("Similar auction lookup error:", error);
+    console.error(
+      "Similar auction lookup error:",
+      error
+    );
     return [];
   }
 
   return data || [];
 }
+
+async function getComparablePriceStats(
+  make: string | null,
+  model: string | null,
+  year: number | null,
+  currentLotId: number
+) {
+  if (!make || !model) {
+    return null;
+  }
+
+  const getRecords = async (
+    minYear?: number,
+    maxYear?: number
+  ) => {
+    let query = supabase
+      .from("vehicle_auction_archive")
+      .select("auction_id, final_bid, year")
+      .eq("make", make)
+      .eq("model", model)
+      .neq("auction_id", currentLotId)
+      .not("final_bid", "is", null)
+      .gte("final_bid", 1000)
+      .limit(100);
+
+    if (
+      minYear !== undefined &&
+      maxYear !== undefined
+    ) {
+      query = query
+        .gte("year", minYear)
+        .lte("year", maxYear);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error(
+        "Comparable auction price lookup error:",
+        error
+      );
+      return [];
+    }
+
+    return data || [];
+  };
+
+  let records =
+    year !== null
+      ? await getRecords(year, year)
+      : await getRecords();
+
+  let minYear = year;
+  let maxYear = year;
+
+  if (
+    records.length < 5 &&
+    year !== null
+  ) {
+    minYear = year - 2;
+    maxYear = year + 2;
+
+    records = await getRecords(
+      minYear,
+      maxYear
+    );
+  }
+
+  const prices = records
+    .map((record) => Number(record.final_bid))
+    .filter(
+      (price) =>
+        Number.isFinite(price) &&
+        price >= 1000
+    );
+
+  if (prices.length < 5) {
+    return null;
+  }
+
+  const average =
+    prices.reduce(
+      (sum, price) => sum + price,
+      0
+    ) / prices.length;
+
+  return {
+    average: Math.round(average),
+    count: prices.length,
+    minYear,
+    maxYear,
+  };
+}
+
+  
 
 
 function formatMileage(value: number | null) {
@@ -658,7 +756,13 @@ const similarLots = await getSimilarLots(
   vehicle?.model || null,
   lot.id
 );
-
+const comparablePriceStats =
+  await getComparablePriceStats(
+    vehicle?.make || null,
+    vehicle?.model || null,
+    vehicle?.year || null,
+    lot.id
+  );
   const vehicleName = vehicle
   ? [vehicle.year, vehicle.make, displayModel(vehicle.model)]
       .filter(Boolean)
@@ -710,7 +814,201 @@ const auctionDetails = [
       : null,
   ],
 ];
+const overviewVehicleName = vehicle
+  ? [
+      vehicle.year,
+    vehicle.make?.toUpperCase() === "BMW"
+  ? "BMW"
+  : vehicle.make,
+      displayModel(vehicle.model),
+      vehicle.trim
+        ?.replace(
+          new RegExp(`^${vehicle.year}\\s+`, "i"),
+          ""
+        ),
+    ]
+      .filter(Boolean)
+      .join(" ")
+  : lot.vin;
 
+const overviewParts: string[] = [];
+
+let openingSentence =
+  `${overviewVehicleName} was archived from ` +
+  `${lot.auction_source} lot ${lot.lot_number}`;
+
+if (lot.auction_date) {
+  openingSentence +=
+    ` with an auction date of ${formatDate(lot.auction_date)}`;
+}
+
+if (lot.location) {
+  openingSentence += ` in ${formatLocation(lot.location)}`;
+}
+
+openingSentence += ".";
+
+overviewParts.push(openingSentence);
+
+const conditionParts: string[] = [];
+
+if (lot.mileage !== null) {
+  conditionParts.push(
+  `mileage of ${formatMileage(lot.mileage)}`
+);
+
+}
+
+if (lot.primary_damage) {
+  conditionParts.push(
+    `primary damage listed as ${lot.primary_damage}`
+  );
+}
+
+if (lot.secondary_damage) {
+  conditionParts.push(
+    `secondary damage listed as ${lot.secondary_damage}`
+  );
+}
+
+if (lot.start_code) {
+  conditionParts.push(
+    `a start code of ${lot.start_code}`
+  );
+}
+
+if (conditionParts.length > 0) {
+  overviewParts.push(
+    `The auction record reported ${conditionParts.join(
+      ", "
+    )}.`
+  );
+}
+
+if (lot.final_bid !== null) {
+  let bidSentence =
+    `The archived final bid was ${formatBid(
+      lot.final_bid
+    )}`;
+
+  if (comparablePriceStats) {
+    const difference =
+      lot.final_bid -
+      comparablePriceStats.average;
+
+    const differenceAmount =
+      Math.abs(difference);
+
+    const comparisonDirection =
+      difference < 0
+        ? "below"
+        : difference > 0
+        ? "above"
+        : "equal to";
+
+    const yearDescription =
+      comparablePriceStats.minYear !== null &&
+      comparablePriceStats.maxYear !== null &&
+      comparablePriceStats.minYear !==
+        comparablePriceStats.maxYear
+        ? `${comparablePriceStats.minYear}–${comparablePriceStats.maxYear}`
+        : comparablePriceStats.minYear !== null
+        ? String(
+            comparablePriceStats.minYear
+          )
+        : "";
+
+    if (difference === 0) {
+      bidSentence +=
+        `, equal to the ${formatBid(
+          comparablePriceStats.average
+        )} average for comparable ${yearDescription} ${
+          vehicle?.make?.toUpperCase() === "BMW"
+  ? "BMW"
+  : vehicle?.make || ""
+        } ${
+          displayModel(vehicle?.model) || ""
+        } auction records, based on ${
+          comparablePriceStats.count
+        } comparable sales`;
+    } else {
+      bidSentence +=
+        `, which was ${formatBid(
+          differenceAmount
+        )} ${comparisonDirection} the ${formatBid(
+          comparablePriceStats.average
+        )} average for comparable ${yearDescription} ${
+          vehicle?.make?.toUpperCase() === "BMW"
+  ? "BMW"
+  : vehicle?.make || ""
+        } ${
+          displayModel(vehicle?.model) || ""
+        } auction records, based on ${
+          comparablePriceStats.count
+        } comparable sales`;
+    }
+  }
+
+  overviewParts.push(
+    `${bidSentence}.`
+  );
+}
+
+const valueParts: string[] = [];
+
+if (lot.sale_document) {
+  valueParts.push(
+    `The sale document was listed as ${lot.sale_document}`
+  );
+}
+
+if (lot.acv !== null) {
+  valueParts.push(
+    `reported actual cash value was ${formatBid(lot.acv)}`
+  );
+}
+
+if (lot.estimated_repair_cost !== null) {
+  valueParts.push(
+    `estimated repair cost was ${formatBid(
+      lot.estimated_repair_cost
+    )}`
+  );
+}
+
+if (valueParts.length > 0) {
+  if (valueParts.length === 1) {
+    overviewParts.push(
+      `${valueParts[0]}.`
+    );
+  } else {
+    overviewParts.push(
+      `${valueParts[0]}. ${valueParts
+        .slice(1)
+        .map(
+          (part) =>
+            part.charAt(0).toUpperCase() +
+            part.slice(1)
+        )
+        .join(". ")}.`
+    );
+  }
+}
+function formatLocation(value: string | null) {
+  if (!value) return null;
+
+  const match = value.match(
+    /^([A-Z]{2})\s*-\s*(.+?)\s*\(\1\)$/i
+  );
+
+  if (match) {
+    return `${match[2]}, ${match[1].toUpperCase()}`;
+  }
+
+  return value;
+}
+const auctionOverview =
+  overviewParts.join(" ");
 
 
   return (
@@ -1273,6 +1571,57 @@ const auctionDetails = [
             />
           </div>
 
+{/* AUCTION OVERVIEW */}
+
+<section
+  style={{
+    marginTop: "34px",
+    marginBottom: "44px",
+    padding: "28px",
+    background: "#f6f7f8",
+    border: "1px solid #e1e1e1",
+    borderRadius: "10px",
+  }}
+>
+  <div
+    style={{
+      fontSize: "12px",
+      fontWeight: "bold",
+      color: "#777",
+      textTransform: "uppercase",
+      letterSpacing: "0.7px",
+      marginBottom: "8px",
+    }}
+  >
+    Auction Overview
+  </div>
+
+  <h2
+    style={{
+      margin: "0 0 14px",
+      fontSize: "24px",
+      lineHeight: 1.3,
+    }}
+  >
+    About This{" "}
+{vehicle?.make?.toUpperCase() === "BMW"
+  ? "BMW"
+  : vehicle?.make || "Vehicle"}{" "}
+Auction
+  </h2>
+
+  <p
+    style={{
+      margin: 0,
+      color: "#444",
+      fontSize: "15px",
+      lineHeight: 1.75,
+      maxWidth: "1050px",
+    }}
+  >
+    {auctionOverview}
+  </p>
+</section>
 {/* VEHICLE DETAILS */}
 
 <section
