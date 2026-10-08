@@ -145,7 +145,34 @@ async function getSimilarLots(
 
   return Array.from(uniqueVins.values());
 }
+async function getModelAuctionCount(
+  make: string | null,
+  model: string | null
+) {
+  if (!make || !model) {
+    return 0;
+  }
 
+  const { count, error } = await supabase
+    .from("vehicle_auction_archive")
+    .select("auction_id", {
+      count: "exact",
+      head: true,
+    })
+    .eq("make", make)
+    .eq("model", model);
+
+  if (error) {
+    console.error(
+      "Model auction count lookup error:",
+      error
+    );
+
+    return 0;
+  }
+
+  return count || 0;
+}
 function formatMileage(value: number | null) {
   if (value === null) {
     return "Not available";
@@ -611,6 +638,11 @@ const makeSlug = vehicle.make
   vehicle.model,
   vehicle.vin
 );
+const modelAuctionCount =
+  await getModelAuctionCount(
+    vehicle.make,
+    vehicle.model
+  );
   const totalPhotos = lots.reduce(
     (total, lot) =>
       total + (lot.image_urls?.length || 0),
@@ -2459,27 +2491,33 @@ const historySummary =
       })}
         </div>
 
-    {makeSlug && vehicle.model && (
-      <div
-        style={{
-          marginTop: "22px",
-        }}
-      >
-        <Link
-          href={`/vehicles/${makeSlug}/${slugifyModel(vehicle.model)}`}
-          style={{
-            display: "inline-block",
-            color: "#171717",
-            fontSize: "16px",
-            fontWeight: "800",
-            textDecoration: "none",
-            padding: "10px 0",
-          }}
-        >
-          View all {vehicle.make} {displayModel(vehicle.model)} auctions →
-        </Link>
-      </div>
-    )}
+    {makeSlug && vehicle.make && (
+  <div
+    style={{
+      marginTop: "22px",
+    }}
+  >
+    <Link
+      href={
+        vehicle.model && modelAuctionCount >= 5
+          ? `/vehicles/${makeSlug}/${slugifyModel(vehicle.model)}`
+          : `/vehicles/${makeSlug}`
+      }
+      style={{
+        display: "inline-block",
+        color: "#171717",
+        fontSize: "16px",
+        fontWeight: "800",
+        textDecoration: "none",
+        padding: "10px 0",
+      }}
+    >
+      {vehicle.model && modelAuctionCount >= 5
+        ? `View all ${vehicle.make} ${displayModel(vehicle.model)} auctions →`
+        : `View all ${vehicle.make} auctions →`}
+    </Link>
+  </div>
+)}
   </section>
 )}
             </div>
