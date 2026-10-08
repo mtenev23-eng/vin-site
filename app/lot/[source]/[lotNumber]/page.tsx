@@ -209,7 +209,34 @@ async function getSimilarLots(
 
   return data || [];
 }
+async function getModelAuctionCount(
+  make: string | null,
+  model: string | null
+) {
+  if (!make || !model) {
+    return 0;
+  }
 
+  const { count, error } = await supabase
+    .from("vehicle_auction_archive")
+    .select("auction_id", {
+      count: "exact",
+      head: true,
+    })
+    .eq("make", make)
+    .eq("model", model);
+
+  if (error) {
+    console.error(
+      "Model auction count lookup error:",
+      error
+    );
+
+    return 0;
+  }
+
+  return count || 0;
+}
 async function getComparablePriceStats(
   make: string | null,
   model: string | null,
@@ -453,7 +480,7 @@ export async function generateMetadata({
   : lot.vin;
 
   const title =
-    `${vehicleName} - ${lot.auction_source} Lot ${lot.lot_number}`;
+  `${vehicleName} ${lot.vin} - ${lot.auction_source} Lot ${lot.lot_number}`;
 
   const descriptionParts = [
     `${vehicleName} auction history for ${lot.auction_source} lot ${lot.lot_number}.`,
@@ -756,6 +783,13 @@ const similarLots = await getSimilarLots(
   vehicle?.model || null,
   lot.id
 );
+
+const modelAuctionCount =
+  await getModelAuctionCount(
+    vehicle?.make || null,
+    vehicle?.model || null
+  );
+
 const comparablePriceStats =
   await getComparablePriceStats(
     vehicle?.make || null,
@@ -1241,54 +1275,61 @@ const auctionOverview =
 
 
 
-          <div
+        <div
   style={{
     display: "flex",
     flexDirection: "column",
     gap: "12px",
   }}
 >
-  <div
-    style={{
-      fontSize: "14px",
-      color: "#666",
-    }}
-  >
-    Lot{" "}
-    <strong style={{ color: "#171717" }}>
-      #{lot.lot_number}
-    </strong>
-  </div>
-
   <div>
     <div
       style={{
-        fontSize: "11px",
-        color: "#777",
-        textTransform: "uppercase",
-        letterSpacing: "1px",
-        fontWeight: "700",
-        marginBottom: "4px",
-      }}
+  fontSize: "15px",
+  color: "#444",
+  textTransform: "uppercase",
+  letterSpacing: "1px",
+  fontWeight: "900",
+  marginBottom: "7px",
+}}
     >
-      Vehicle Identification Number
+      VIN
     </div>
 
     <Link
       href={`/vin/${lot.vin}`}
       style={{
-        display: "inline-block",
-        color: "#171717",
-        fontSize: "30px",
-        fontWeight: "800",
-        letterSpacing: "0.3px",
-        textDecoration: "none",
-        lineHeight: 1.2,
-      }}
+  display: "inline-block",
+  color: "#171717",
+  fontSize: "40px",
+  fontWeight: "900",
+  letterSpacing: "0.8px",
+  textDecoration: "none",
+  lineHeight: 1.08,
+  marginBottom: "4px",
+}}
     >
       {lot.vin}
     </Link>
   </div>
+
+  <div
+  style={{
+    fontSize: "16px",
+    color: "#555",
+    fontWeight: "600",
+  }}
+>
+  {lot.auction_source} Lot{" "}
+  <strong
+    style={{
+      color: "#171717",
+      fontWeight: "800",
+    }}
+  >
+    #{lot.lot_number}
+  </strong>
+</div>
 </div>
 </div>
           
@@ -2176,26 +2217,34 @@ Auction
       })}
     </div>
 
-    {vehicle?.make && vehicle?.model && (
+    {vehicle?.make && (
   <div
     style={{
       marginTop: "22px",
     }}
   >
     <Link
-      href={`/vehicles/${toSlug(vehicle.make)}/${toSlug(
-        displayModel(vehicle.model) || vehicle.model
-      )}`}
+      href={
+        vehicle.model && modelAuctionCount >= 5
+          ? `/vehicles/${toSlug(vehicle.make)}/${toSlug(
+              displayModel(vehicle.model) || vehicle.model
+            )}`
+          : `/vehicles/${toSlug(vehicle.make)}`
+      }
       style={{
-  display: "inline-block",
-  color: "#171717",
-  fontSize: "16px",
-  fontWeight: "800",
-  textDecoration: "none",
-  padding: "10px 0",
-}}
+        display: "inline-block",
+        color: "#171717",
+        fontSize: "16px",
+        fontWeight: "800",
+        textDecoration: "none",
+        padding: "10px 0",
+      }}
     >
-      View all {vehicle.make} {displayModel(vehicle.model)} auctions →
+      {vehicle.model && modelAuctionCount >= 5
+        ? `View all ${vehicle.make} ${
+            displayModel(vehicle.model) || vehicle.model
+          } auctions →`
+        : `View all ${vehicle.make} auctions →`}
     </Link>
   </div>
 )}

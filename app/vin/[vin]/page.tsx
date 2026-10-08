@@ -1014,37 +1014,36 @@ const historySummary =
 )}
 
       <div
-        style={{
-          display: "flex",
-          alignItems: "baseline",
-          flexWrap: "wrap",
-          gap: "12px",
-        }}
-      >
-        <span
-          style={{
-            fontSize: "12px",
-            fontWeight: "700",
-            textTransform: "uppercase",
-            letterSpacing: "1px",
-            color: "#777",
-          }}
-        >
-          VIN
-        </span>
+  style={{
+    display: "flex",
+    flexDirection: "column",
+    gap: "7px",
+  }}
+>
+  <span
+    style={{
+      fontSize: "15px",
+      fontWeight: "900",
+      textTransform: "uppercase",
+      letterSpacing: "1px",
+      color: "#444",
+    }}
+  >
+    VIN
+  </span>
 
-        <strong
-          style={{
-            fontSize: "22px",
-            lineHeight: 1.2,
-            color: "#111",
-            letterSpacing: "1px",
-            fontFamily: "monospace",
-          }}
-        >
-          {vehicle.vin}
-        </strong>
-      </div>
+  <strong
+    style={{
+      fontSize: "40px",
+      lineHeight: 1.08,
+      color: "#171717",
+      letterSpacing: "0.8px",
+      fontWeight: "900",
+    }}
+  >
+    {vehicle.vin}
+  </strong>
+</div>
     </div>
 
     {/* ARCHIVE SNAPSHOT */}
