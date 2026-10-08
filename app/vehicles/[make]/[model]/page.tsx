@@ -63,8 +63,14 @@ const SUPPORTED_MAKES: Record<
   nissan: { databaseMake: "NISSAN", displayName: "Nissan" },
   lexus: { databaseMake: "LEXUS", displayName: "Lexus" },
   kia: { databaseMake: "KIA", displayName: "Kia" },
-  audi: { databaseMake: "AUDI", displayName: "Audi" },
-  dodge: { databaseMake: "DODGE", displayName: "Dodge" },
+ audi: { databaseMake: "AUDI", displayName: "Audi" },
+
+porsche: {
+  databaseMake: "PORSCHE",
+  displayName: "Porsche",
+},
+
+dodge: { databaseMake: "DODGE", displayName: "Dodge" },
   volkswagen: {
     databaseMake: "VOLKSWAGEN",
     displayName: "Volkswagen",

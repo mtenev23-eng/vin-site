@@ -99,6 +99,10 @@ const SUPPORTED_MAKES: Record<
     databaseMake: "AUDI",
     displayName: "Audi",
   },
+  porsche: {
+  databaseMake: "PORSCHE",
+  displayName: "Porsche",
+},
   dodge: {
     databaseMake: "DODGE",
     displayName: "Dodge",

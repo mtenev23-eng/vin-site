@@ -58,7 +58,7 @@ export default function Home() {
   const [multipleLots, setMultipleLots] = useState<
     MultipleLotResult[]
   >([]);
-
+const [showAllMakes, setShowAllMakes] = useState(false);
   const [recentAuctions, setRecentAuctions] =
     useState<RecentAuction[]>([]);
 
@@ -151,18 +151,29 @@ export default function Home() {
   }
 
   const makes = [
-    { name: "BMW", slug: "bmw" },
-    {
-      name: "Mercedes-Benz",
-      slug: "mercedes-benz",
-    },
-    { name: "Audi", slug: "audi" },
-    { name: "Ford", slug: "ford" },
-    { name: "Toyota", slug: "toyota" },
-    { name: "Tesla", slug: "tesla" },
-    { name: "Lexus", slug: "lexus" },
-    { name: "Hyundai", slug: "hyundai" },
-  ];
+  { name: "BMW", slug: "bmw" },
+  { name: "Mercedes-Benz", slug: "mercedes-benz" },
+  { name: "Audi", slug: "audi" },
+  { name: "Porsche", slug: "porsche" },
+  { name: "Ford", slug: "ford" },
+  { name: "Toyota", slug: "toyota" },
+  { name: "Tesla", slug: "tesla" },
+  { name: "Lexus", slug: "lexus" },
+  { name: "Hyundai", slug: "hyundai" },
+  { name: "Honda", slug: "honda" },
+  { name: "Chevrolet", slug: "chevrolet" },
+  { name: "Nissan", slug: "nissan" },
+  { name: "Jeep", slug: "jeep" },
+  { name: "Volkswagen", slug: "volkswagen" },
+  { name: "Kia", slug: "kia" },
+  { name: "Volvo", slug: "volvo" },
+  { name: "Mazda", slug: "mazda" },
+  { name: "Dodge", slug: "dodge" },
+  { name: "Land Rover", slug: "land-rover" },
+  { name: "Mitsubishi", slug: "mitsubishi" },
+  { name: "Buick", slug: "buick" },
+  { name: "Chrysler", slug: "chrysler" },
+];
 
   return (
     <main
@@ -406,7 +417,7 @@ records by VIN, lot number, make or model.
               gap: "9px",
             }}
           >
-            {makes.map((make) => (
+            {(showAllMakes ? makes : makes.slice(0, 12)).map((make) => (
   <Link
     key={make.slug}
     href={`/vehicles/${make.slug}`}
@@ -434,6 +445,23 @@ records by VIN, lot number, make or model.
     </span>
   </Link>
 ))}
+<button
+  type="button"
+  onClick={() => setShowAllMakes((current) => !current)}
+  style={{
+    padding: "9px 14px",
+    background: "#171717",
+    border: "1px solid #171717",
+    borderRadius: "8px",
+    fontSize: "14px",
+    fontWeight: "700",
+    color: "#ffffff",
+    cursor: "pointer",
+    whiteSpace: "nowrap",
+  }}
+>
+  {showAllMakes ? "Show fewer makes ↑" : "View all makes →"}
+</button>
           
           </div>
         </div>
