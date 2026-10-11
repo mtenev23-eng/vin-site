@@ -340,131 +340,161 @@ async function getVehicleArchive(
   const from = (page - 1) * PAGE_SIZE;
   const to = from + PAGE_SIZE - 1;
 
-  const runQuery = async () => {
-    let archiveQuery = supabase
-      .from("vehicle_auction_archive")
-      .select(
-        `
-          vin,
-          year,
-          make,
-          model,
-          trim,
-          auction_id,
-          auction_source,
-          lot_number,
-          final_bid,
-          auction_date,
-          mileage,
-          primary_damage,
-          image_urls
-        `,
-        {
-          count: "exact",
-        }
-      )
-      .ilike("make", databaseMake)
-      .not("auction_date", "is", null)
-      .order("auction_date", {
-        ascending: false,
-        nullsFirst: false,
-      })
-      .order("auction_id", {
-        ascending: false,
-      });
-
-    if (selectedModel) {
-      if (BMW_MODEL_GROUPS.includes(selectedModel)) {
-        const prefixMap: Record<string, string> = {
-          "1 Series": "1",
-          "2 Series": "2",
-          "3 Series": "3",
-          "4 Series": "4",
-          "5 Series": "5",
-          "6 Series": "6",
-          "7 Series": "7",
-          "8 Series": "8",
-          "Z Series": "Z",
-          "X Series": "X",
-          M: "M",
-        };
-
-        const prefix = prefixMap[selectedModel];
-
-        archiveQuery = archiveQuery.ilike(
-          "model",
-          `${prefix}%`
-        );
-      } else {
-        archiveQuery = archiveQuery.eq(
-          "model",
-          selectedModel
-        );
-      }
-    }
-
-    return archiveQuery.range(from, to);
+  const prefixMap: Record<string, string> = {
+    "1 Series": "1",
+    "2 Series": "2",
+    "3 Series": "3",
+    "4 Series": "4",
+    "5 Series": "5",
+    "6 Series": "6",
+    "7 Series": "7",
+    "8 Series": "8",
+    "Z Series": "Z",
+    "X Series": "X",
+    M: "M",
   };
 
-  let result = await runQuery();
+  /*
+   * STEP 1:
+   * Fetch only the 24 vehicles needed for this page.
+   */
+  let vehicleQuery = supabase
+    .from("vehicles")
+    .select(
+      "vin, year, make, model, trim",
+      {
+        count: "exact",
+      }
+    )
+    .ilike("make", databaseMake)
+    .order("created_at", {
+      ascending: false,
+    });
 
-  if (result.error) {
-    console.warn(
-      "Vehicle archive query failed. Retrying:",
-      result.error
-    );
-
-    result = await runQuery();
+  if (selectedModel) {
+    if (
+      databaseMake.toUpperCase() === "BMW" &&
+      BMW_MODEL_GROUPS.includes(selectedModel)
+    ) {
+      vehicleQuery = vehicleQuery.ilike(
+        "model",
+        `${prefixMap[selectedModel]}%`
+      );
+    } else {
+      vehicleQuery = vehicleQuery.eq(
+        "model",
+        selectedModel
+      );
+    }
   }
 
   const {
-    data,
-    error,
+    data: vehicles,
+    error: vehicleError,
     count,
-  } = result;
+  } = await vehicleQuery.range(from, to);
 
-  if (error) {
+  if (vehicleError) {
     console.error(
-      "Vehicle archive query failed after retry:",
-      error
+      "Vehicle archive vehicle query error:",
+      vehicleError
     );
 
-   return {
-  cards: [] as VehicleCard[],
-  totalCount: 0,
-  failed: true,
-};
+    return {
+      cards: [] as VehicleCard[],
+      totalCount: 0,
+      failed: true,
+    };
   }
 
-  const cards: VehicleCard[] = (data || []).map(
-    (row) => ({
-      vehicle: {
-        vin: row.vin,
-        year: row.year,
-        make: row.make,
-        model: row.model,
-        trim: row.trim,
-      },
+  const typedVehicles = (vehicles || []) as Vehicle[];
 
-      lot: {
-        id: row.auction_id,
-        auction_source: row.auction_source,
-        lot_number: row.lot_number,
-        vin: row.vin,
-        final_bid: row.final_bid,
-        auction_date: row.auction_date,
-        mileage: row.mileage,
-        primary_damage: row.primary_damage,
-        image_urls: row.image_urls,
-      },
-    })
+  if (typedVehicles.length === 0) {
+    return {
+      cards: [] as VehicleCard[],
+      totalCount: count || 0,
+      failed: false,
+    };
+  }
+
+  /*
+   * STEP 2:
+   * Fetch auction history only for those 24 VINs.
+   */
+  const vins = typedVehicles.map(
+    (vehicle) => vehicle.vin
   );
 
+  const {
+    data: lots,
+    error: lotError,
+  } = await supabase
+    .from("auction_lots")
+    .select(`
+      id,
+      auction_source,
+      lot_number,
+      vin,
+      final_bid,
+      auction_date,
+      mileage,
+      primary_damage,
+      image_urls
+    `)
+    .in("vin", vins)
+    .not("auction_date", "is", null)
+    .order("auction_date", {
+      ascending: false,
+      nullsFirst: false,
+    })
+    .order("id", {
+      ascending: false,
+    });
+
+  if (lotError) {
+    console.error(
+      "Vehicle archive lot query error:",
+      lotError
+    );
+
+    return {
+      cards: [] as VehicleCard[],
+      totalCount: count || 0,
+      failed: true,
+    };
+  }
+
+  /*
+   * Because lots are newest-first, keep the first
+   * auction lot found for each VIN.
+   */
+  const latestLotByVin = new Map<
+    string,
+    AuctionLot
+  >();
+
+  for (const lot of lots || []) {
+    if (!latestLotByVin.has(lot.vin)) {
+      latestLotByVin.set(
+        lot.vin,
+        lot as AuctionLot
+      );
+    }
+  }
+
+  const cards: VehicleCard[] =
+    typedVehicles.map((vehicle) => ({
+      vehicle,
+      lot:
+        latestLotByVin.get(vehicle.vin) ||
+        null,
+    }));
+
   return {
-  cards,
-  totalCount: count || 0,
-  failed: false,
-};
+    cards,
+    totalCount: count || 0,
+    failed: false,
+  };
 }
 
 function getPaginationPages(currentPage: number, totalPages: number) {
