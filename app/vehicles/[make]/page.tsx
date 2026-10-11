@@ -340,109 +340,131 @@ async function getVehicleArchive(
   const from = (page - 1) * PAGE_SIZE;
   const to = from + PAGE_SIZE - 1;
 
-  let archiveQuery = supabase
-    .from("vehicle_auction_archive")
-    .select(
-      `
-        vin,
-        year,
-        make,
-        model,
-        trim,
-        auction_id,
-        auction_source,
-        lot_number,
-        final_bid,
-        auction_date,
-        mileage,
-        primary_damage,
-        image_urls
-      `,
-      {
-        count: "exact",
+  const runQuery = async () => {
+    let archiveQuery = supabase
+      .from("vehicle_auction_archive")
+      .select(
+        `
+          vin,
+          year,
+          make,
+          model,
+          trim,
+          auction_id,
+          auction_source,
+          lot_number,
+          final_bid,
+          auction_date,
+          mileage,
+          primary_damage,
+          image_urls
+        `,
+        {
+          count: "exact",
+        }
+      )
+      .ilike("make", databaseMake)
+      .not("auction_date", "is", null)
+      .order("auction_date", {
+        ascending: false,
+        nullsFirst: false,
+      })
+      .order("auction_id", {
+        ascending: false,
+      });
+
+    if (selectedModel) {
+      if (BMW_MODEL_GROUPS.includes(selectedModel)) {
+        const prefixMap: Record<string, string> = {
+          "1 Series": "1",
+          "2 Series": "2",
+          "3 Series": "3",
+          "4 Series": "4",
+          "5 Series": "5",
+          "6 Series": "6",
+          "7 Series": "7",
+          "8 Series": "8",
+          "Z Series": "Z",
+          "X Series": "X",
+          M: "M",
+        };
+
+        const prefix = prefixMap[selectedModel];
+
+        archiveQuery = archiveQuery.ilike(
+          "model",
+          `${prefix}%`
+        );
+      } else {
+        archiveQuery = archiveQuery.eq(
+          "model",
+          selectedModel
+        );
       }
-    )
-    .ilike("make", databaseMake)
-    .not("auction_date", "is", null)
-    .order("auction_date", {
-      ascending: false,
-      nullsFirst: false,
-    })
-    .order("auction_id", {
-      ascending: false,
-    });
+    }
 
- if (selectedModel) {
-  if (BMW_MODEL_GROUPS.includes(selectedModel)) {
-    const prefixMap: Record<string, string> = {
-      "1 Series": "1",
-      "2 Series": "2",
-      "3 Series": "3",
-      "4 Series": "4",
-      "5 Series": "5",
-      "6 Series": "6",
-      "7 Series": "7",
-      "8 Series": "8",
-      "Z Series": "Z",
-      "X Series": "X",
-      "M": "M",
-    };
+    return archiveQuery.range(from, to);
+  };
 
-    const prefix = prefixMap[selectedModel];
+  let result = await runQuery();
 
-    archiveQuery = archiveQuery.ilike(
-      "model",
-      `${prefix}%`
+  if (result.error) {
+    console.warn(
+      "Vehicle archive query failed. Retrying:",
+      result.error
     );
-  } else {
-    archiveQuery = archiveQuery.eq(
-      "model",
-      selectedModel
-    );
+
+    result = await runQuery();
   }
-}
 
   const {
     data,
     error,
     count,
-  } = await archiveQuery.range(from, to);
+  } = result;
 
   if (error) {
-    console.error("Vehicle archive error:", error);
+    console.error(
+      "Vehicle archive query failed after retry:",
+      error
+    );
 
-    return {
-      cards: [] as VehicleCard[],
-      totalCount: 0,
-    };
+   return {
+  cards: [] as VehicleCard[],
+  totalCount: 0,
+  failed: true,
+};
   }
 
-  const cards: VehicleCard[] = (data || []).map((row) => ({
-    vehicle: {
-      vin: row.vin,
-      year: row.year,
-      make: row.make,
-      model: row.model,
-      trim: row.trim,
-    },
+  const cards: VehicleCard[] = (data || []).map(
+    (row) => ({
+      vehicle: {
+        vin: row.vin,
+        year: row.year,
+        make: row.make,
+        model: row.model,
+        trim: row.trim,
+      },
 
-    lot: {
-      id: row.auction_id,
-      auction_source: row.auction_source,
-      lot_number: row.lot_number,
-      vin: row.vin,
-      final_bid: row.final_bid,
-      auction_date: row.auction_date,
-      mileage: row.mileage,
-      primary_damage: row.primary_damage,
-      image_urls: row.image_urls,
-    },
-  }));
+      lot: {
+        id: row.auction_id,
+        auction_source: row.auction_source,
+        lot_number: row.lot_number,
+        vin: row.vin,
+        final_bid: row.final_bid,
+        auction_date: row.auction_date,
+        mileage: row.mileage,
+        primary_damage: row.primary_damage,
+        image_urls: row.image_urls,
+      },
+    })
+  );
 
   return {
-    cards,
-    totalCount: count || 0,
-  };
+  cards,
+  totalCount: count || 0,
+  failed: false,
+};
 }
 
 function getPaginationPages(currentPage: number, totalPages: number) {
@@ -616,7 +638,7 @@ const bmwModelGroups = isBmw
     })).filter((item) => item.vehicleCount > 0)
   : [];
 
-  const { cards, totalCount } = await getVehicleArchive(
+const { cards, totalCount, failed } = await getVehicleArchive(
     config.databaseMake,
     selectedModel,
     page
@@ -752,7 +774,9 @@ const bmwModelGroups = isBmw
       fontWeight: 600,
     }}
   >
-    {totalCount.toLocaleString()} archived vehicles
+    {failed
+  ? "Archive temporarily unavailable"
+  : `${totalCount.toLocaleString()} archived vehicles`}
   </span>
 </div>
 
@@ -858,15 +882,32 @@ const bmwModelGroups = isBmw
                 lineHeight: 1.6,
               }}
             >
-              {totalCount.toLocaleString()}{" "}
-              {totalCount === 1
-                ? "archived vehicle"
-                : "archived vehicles"}{" "}
-              found.
+              {failed ? (
+  <>Archive data is temporarily unavailable. Please try again shortly.</>
+) : (
+  <>
+    {totalCount.toLocaleString()}{" "}
+    {totalCount === 1
+      ? "archived vehicle"
+      : "archived vehicles"}{" "}
+    found.
+  </>
+)}
             </p>
           </div>
 
-          {cards.length === 0 ? (
+          {failed ? (
+  <div
+    style={{
+      background: "#ffffff",
+      border: "1px solid #e1e1e1",
+      borderRadius: "12px",
+      padding: "28px",
+    }}
+  >
+    Auction records are temporarily unavailable. Please try again shortly.
+  </div>
+) : cards.length === 0 ? (
             <div
               style={{
                 background: "#ffffff",
