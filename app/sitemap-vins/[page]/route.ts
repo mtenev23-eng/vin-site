@@ -32,7 +32,7 @@ export async function GET(
 
   const { data: vehicles, error } =
     await supabase
-      .from("vehicles")
+      .from("sitemap_vins")
       .select("vin, created_at")
       .not("vin", "is", null)
       .order("vin", { ascending: true })

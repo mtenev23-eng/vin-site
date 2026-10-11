@@ -8,12 +8,12 @@ export async function GET() {
     { count: vehicleCount, error: vehicleError },
     { count: lotCount, error: lotError },
   ] = await Promise.all([
-    supabase
-      .from("vehicles")
-      .select("*", {
-        count: "exact",
-        head: true,
-      }),
+   supabase
+  .from("sitemap_vins")
+  .select("*", {
+    count: "exact",
+    head: true,
+  }),
 
     supabase
       .from("auction_lots")

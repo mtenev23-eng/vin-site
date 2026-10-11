@@ -474,10 +474,10 @@ export async function generateMetadata({
       canonical: canonicalUrl,
     },
 
-    robots: {
-      index: true,
-      follow: true,
-    },
+  robots: {
+  index: lots.length > 0,
+  follow: true,
+},
 
     openGraph: {
       title,
