@@ -385,10 +385,21 @@ async function getModelData(
 
 export async function generateMetadata({
   params,
+  searchParams,
 }: {
   params: Promise<{ make: string; model: string }>;
+  searchParams: Promise<{
+    page?: string;
+  }>;
 }) {
   const { make: makeSlug, model: modelSlug } = await params;
+
+  const query = await searchParams;
+
+  const page = Math.max(
+    1,
+    Number(query.page) || 1
+  );
 
   const config = await getModelConfig(makeSlug, modelSlug);
 
@@ -422,10 +433,10 @@ export async function generateMetadata({
       canonical,
     },
 
-    robots: {
-      index: true,
-      follow: true,
-    },
+   robots: {
+  index: page === 1,
+  follow: true,
+},
 
     openGraph: {
       title,
