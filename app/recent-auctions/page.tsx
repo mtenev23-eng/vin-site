@@ -16,9 +16,7 @@ export async function generateMetadata({
       : 1;
 
   const canonical =
-    currentPage === 1
-      ? "https://salvagevinhistory.com/recent-auctions"
-      : `https://salvagevinhistory.com/recent-auctions?page=${currentPage}`;
+  "https://salvagevinhistory.com/recent-auctions";
 
   const title =
     currentPage === 1
@@ -39,9 +37,9 @@ export async function generateMetadata({
     },
 
     robots: {
-      index: true,
-      follow: true,
-    },
+  index: currentPage === 1,
+  follow: true,
+},
 
     openGraph: {
       title,
