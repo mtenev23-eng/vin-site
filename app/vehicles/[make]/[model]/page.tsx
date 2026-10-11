@@ -705,7 +705,55 @@ const averageBid =
             </strong>
           </div>
         </section>
+<section
+  style={{
+    marginBottom: "36px",
+    maxWidth: "900px",
+  }}
+>
+  <p
+    style={{
+      margin: 0,
+      color: "#5f5f5f",
+      fontSize: "16px",
+      lineHeight: 1.7,
+    }}
+  >
+    Our archive currently contains{" "}
+    {auctionCount.toLocaleString()} historical{" "}
+    {vehicleName} auction records. Recent archived sales
+    averaged{" "}
+    {averageBid !== null
+      ? formatPrice(averageBid)
+      : "an unavailable amount"}
+    , with records from Copart and IAAI covering a range of
+    vehicle years, mileage and reported damage conditions.
+  </p>
+  <div
+  style={{
+    marginTop: "14px",
+    display: "flex",
+    gap: "16px",
+    flexWrap: "wrap",
+  }}
+>
+  <Link
+    href={`/vehicles/${makeSlug.toLowerCase()}`}
+    style={{
+      color: "#171717",
+      fontSize: "14px",
+      fontWeight: "bold",
+      textDecoration: "underline",
+      textUnderlineOffset: "3px",
+    }}
+  >
+    Browse all {config.makeName} auction history →
+  </Link>
 
+
+
+</div>
+</section>
         <section style={{ marginBottom: "48px" }}>
           <h2
             style={{
@@ -939,37 +987,68 @@ const averageBid =
     )}
 
     {Array.from({ length: totalPages }, (_, index) => {
-      const pageNumber = index + 1;
+  const pageNumber = index + 1;
 
-      return (
-        <Link
-          key={pageNumber}
-          href={`?page=${pageNumber}`}
-          style={{
-            minWidth: "38px",
-            padding: "9px 10px",
-            textAlign: "center",
-            border: "1px solid #d8d8d8",
-            borderRadius: "7px",
-            color:
-              pageNumber === page
-                ? "#ffffff"
-                : "#171717",
-            background:
-              pageNumber === page
-                ? "#171717"
-                : "#ffffff",
-            textDecoration: "none",
-            fontWeight:
-              pageNumber === page
-                ? "bold"
-                : "normal",
-          }}
-        >
-          {pageNumber}
-        </Link>
-      );
-    })}
+  const shouldShow =
+    pageNumber === 1 ||
+    pageNumber === totalPages ||
+    Math.abs(pageNumber - page) <= 2;
+
+  const showLeadingEllipsis =
+    pageNumber === page - 3 &&
+    page > 4;
+
+  const showTrailingEllipsis =
+    pageNumber === page + 3 &&
+    page < totalPages - 3;
+
+  if (showLeadingEllipsis || showTrailingEllipsis) {
+    return (
+      <span
+        key={`ellipsis-${pageNumber}`}
+        style={{
+          padding: "9px 4px",
+          color: "#777777",
+        }}
+      >
+        …
+      </span>
+    );
+  }
+
+  if (!shouldShow) {
+    return null;
+  }
+
+  return (
+    <Link
+      key={pageNumber}
+      href={`?page=${pageNumber}`}
+      style={{
+        minWidth: "38px",
+        padding: "9px 10px",
+        textAlign: "center",
+        border: "1px solid #d8d8d8",
+        borderRadius: "7px",
+        color:
+          pageNumber === page
+            ? "#ffffff"
+            : "#171717",
+        background:
+          pageNumber === page
+            ? "#171717"
+            : "#ffffff",
+        textDecoration: "none",
+        fontWeight:
+          pageNumber === page
+            ? "bold"
+            : "normal",
+      }}
+    >
+      {pageNumber}
+    </Link>
+  );
+})}
 
     {page < totalPages && (
       <Link
