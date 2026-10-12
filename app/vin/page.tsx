@@ -523,6 +523,7 @@ const buildPageUrl = (page: number) => {
                 {firstImage && (
                   <Link
                     href={`/vin/${vehicle.vin}`}
+                    prefetch={false}
                     style={{
                       display: "block",
                       background: "#f3f3f3",
@@ -571,6 +572,7 @@ const buildPageUrl = (page: number) => {
                   >
                     <Link
                       href={`/vin/${vehicle.vin}`}
+                      prefetch={false}
                       style={{
                         color: "#171717",
                         textDecoration: "none",
@@ -667,6 +669,7 @@ const buildPageUrl = (page: number) => {
 
                   <Link
                     href={`/vin/${vehicle.vin}`}
+                    prefetch={false}
                     style={{
                       display: "inline-block",
                       background: "#171717",
@@ -703,6 +706,7 @@ const buildPageUrl = (page: number) => {
             {currentPage > 1 && (
               <Link
                 href={buildPageUrl(currentPage - 1)}
+                prefetch={false}
                 style={{
                   padding: "9px 12px",
                   border: "1px solid #dddddd",
@@ -731,6 +735,7 @@ const buildPageUrl = (page: number) => {
                 <Link
                   key={item}
                   href={buildPageUrl(item)}
+                  prefetch={false}
                   aria-current={
                     item === currentPage
                       ? "page"
@@ -769,6 +774,7 @@ const buildPageUrl = (page: number) => {
             {currentPage < totalPages && (
               <Link
                 href={buildPageUrl(currentPage + 1)}
+                prefetch={false}
                 style={{
                   padding: "9px 12px",
                   border: "1px solid #dddddd",

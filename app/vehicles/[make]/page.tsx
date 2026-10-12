@@ -837,6 +837,7 @@ const { cards, totalCount, failed } = await getVehicleArchive(
           >
             <Link
               href={`/vehicles/${normalizedMakeSlug}`}
+              prefetch={false}
               style={{
                 padding: "10px 14px",
                 borderRadius: "8px",
@@ -871,6 +872,7 @@ const { cards, totalCount, failed } = await getVehicleArchive(
     <Link
       key={item.model}
       href={modelUrl}
+      prefetch={false}
       style={{
         padding: "10px 14px",
         borderRadius: "8px",
@@ -995,6 +997,7 @@ const { cards, totalCount, failed } = await getVehicleArchive(
                     {lotUrl ? (
                       <Link
                         href={lotUrl}
+                        prefetch={false}
                         style={{
                           display: "block",
                           color: "inherit",
@@ -1146,6 +1149,7 @@ const { cards, totalCount, failed } = await getVehicleArchive(
 
                       <Link
                         href={`/vin/${vehicle.vin}`}
+                        prefetch={false}
                         style={{
                           color: "#171717",
                           fontSize: "13px",
@@ -1181,6 +1185,7 @@ const { cards, totalCount, failed } = await getVehicleArchive(
                     page - 1,
                     selectedModel
                   )}
+                    prefetch={false}
                   style={{
                     padding: "9px 12px",
                     border: "1px solid #d8d8d8",
@@ -1226,6 +1231,7 @@ const { cards, totalCount, failed } = await getVehicleArchive(
                         pageNumber,
                         selectedModel
                       )}
+                        prefetch={false}
                       style={{
                         minWidth: "38px",
                         padding: "9px 10px",
@@ -1260,6 +1266,7 @@ const { cards, totalCount, failed } = await getVehicleArchive(
                     page + 1,
                     selectedModel
                   )}
+                    prefetch={false}
                   style={{
                     padding: "9px 12px",
                     border: "1px solid #d8d8d8",

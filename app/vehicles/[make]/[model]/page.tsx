@@ -829,6 +829,7 @@ const averageBid =
                 >
                   <Link
                     href={lotUrl}
+                    prefetch={false}
                     style={{
                       display: "block",
                       color: "inherit",
@@ -890,6 +891,7 @@ const averageBid =
                     >
                       <Link
                         href={lotUrl}
+                        prefetch={false}
                         style={{
                           color: "#171717",
                           textDecoration: "none",
@@ -962,6 +964,7 @@ const averageBid =
 
                     <Link
                       href={`/vin/${lot.vin}`}
+                      prefetch={false}
                       style={{
                         color: "#171717",
                         fontSize: "13px",
@@ -991,6 +994,7 @@ const averageBid =
     {page > 1 && (
       <Link
         href={`?page=${page - 1}`}
+          prefetch={false}
         style={{
           padding: "9px 12px",
           border: "1px solid #d8d8d8",
@@ -1042,6 +1046,7 @@ const averageBid =
     <Link
       key={pageNumber}
       href={`?page=${pageNumber}`}
+      prefetch={false}
       style={{
         minWidth: "38px",
         padding: "9px 10px",
@@ -1071,6 +1076,7 @@ const averageBid =
     {page < totalPages && (
       <Link
         href={`?page=${page + 1}`}
+        prefetch={false}
         style={{
           padding: "9px 12px",
           border: "1px solid #d8d8d8",

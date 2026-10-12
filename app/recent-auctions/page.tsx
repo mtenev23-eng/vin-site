@@ -280,6 +280,7 @@ if (currentPage > totalPages) {
               >
                 <Link
                   href={lotUrl}
+                  prefetch={false}
                   style={{
                     color: "inherit",
                     textDecoration: "none",
@@ -340,6 +341,7 @@ if (currentPage > totalPages) {
 
                   <Link
                     href={lotUrl}
+                    prefetch={false}
                     style={{
                       color: "#171717",
                       textDecoration: "none",
@@ -408,6 +410,7 @@ if (currentPage > totalPages) {
                       VIN:{" "}
                       <Link
                         href={`/vin/${lot.vin}`}
+                        prefetch={false}
                         style={{
                           color: "#171717",
                           fontWeight: "600",
@@ -447,6 +450,7 @@ if (currentPage > totalPages) {
           ? "/recent-auctions"
           : `/recent-auctions?page=${currentPage - 1}`
       }
+      prefetch={false}
       style={{
         padding: "10px 14px",
         border: "1px solid #ccc",
@@ -509,6 +513,7 @@ if (currentPage > totalPages) {
         ) : (
           <Link
             href={href}
+            prefetch={false}
             style={{
               padding: "10px 14px",
               border: "1px solid #ccc",
@@ -530,6 +535,7 @@ if (currentPage > totalPages) {
   {currentPage < totalPages && (
     <Link
       href={`/recent-auctions?page=${currentPage + 1}`}
+      prefetch={false}
       style={{
         padding: "10px 14px",
         border: "1px solid #ccc",
