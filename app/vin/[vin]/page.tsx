@@ -454,12 +454,12 @@ export async function generateMetadata({
   .filter(Boolean)
   .join(" ");
 
-  const title = `${vehicleName} Auction History - VIN ${vehicle.vin}`;
+  const title = `${vehicle.vin} - ${vehicleName} Auction History`;
 
   const description =
-    `${vehicleName} VIN ${vehicle.vin} auction history. ` +
-    `View ${lots.length} archived auction record${lots.length === 1 ? "" : "s"} ` +
-    `with sale price, mileage, damage details and auction photos.`;
+  `Auction history for VIN ${vehicle.vin} - ${vehicleName}. ` +
+  `View ${lots.length} archived auction record${lots.length === 1 ? "" : "s"} ` +
+  `with sale price, mileage, reported damage and auction photos.`;
 
   const firstImage =
     lots.find(
