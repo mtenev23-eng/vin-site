@@ -1,9 +1,10 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { supabase } from "../../utils/supabase/client";
 
 const PAGE_SIZE = 24;
-
+const MAX_ARCHIVE_PAGES = 300;
 const SITE_URL = "https://salvagevinhistory.com";
 
 type VinArchivePageProps = {
@@ -144,7 +145,9 @@ const requestedPage = Number(params.page || "1");
     Number.isFinite(requestedPage) && requestedPage > 0
       ? Math.floor(requestedPage)
       : 1;
-
+if (currentPage > MAX_ARCHIVE_PAGES) {
+  notFound();
+}
   const from = (currentPage - 1) * PAGE_SIZE;
   const to = from + PAGE_SIZE - 1;
 
@@ -227,9 +230,15 @@ if (vehicleError) {
 
   const totalVehicles = count || 0;
   const totalPages = Math.max(
-    1,
+  1,
+  Math.min(
+    MAX_ARCHIVE_PAGES,
     Math.ceil(totalVehicles / PAGE_SIZE)
-  );
+  )
+);
+if (currentPage > totalPages && !vehicleError) {
+  notFound();
+}
 const buildPageUrl = (page: number) => {
   const params = new URLSearchParams();
 

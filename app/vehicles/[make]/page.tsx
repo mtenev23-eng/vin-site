@@ -39,7 +39,7 @@ type ModelSummary = {
 };
 
 const PAGE_SIZE = 24;
-
+const MAX_ARCHIVE_PAGES = 300;
 const SUPPORTED_MAKES: Record<
   string,
   {
@@ -570,6 +570,9 @@ export async function generateMetadata({
   }
 
   const page = Math.max(1, Number(query.page) || 1);
+  if (!Number.isInteger(page) || page > MAX_ARCHIVE_PAGES) {
+  notFound();
+}
   const selectedModel = query.model?.trim() || null;
 
   const canonical =
@@ -675,9 +678,12 @@ const { cards, totalCount, failed } = await getVehicleArchive(
   );
 
   const totalPages = Math.max(
-    1,
+  1,
+  Math.min(
+    MAX_ARCHIVE_PAGES,
     Math.ceil(totalCount / PAGE_SIZE)
-  );
+  )
+);
 
   if (page > totalPages && totalCount > 0) {
     notFound();

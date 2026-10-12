@@ -24,23 +24,19 @@ export async function GET(
     });
   }
 
-  const from =
-    (pageNumber - 1) * SITEMAP_SIZE;
-
-  const to =
-    from + SITEMAP_SIZE - 1;
+ const fromId = (pageNumber - 1) * SITEMAP_SIZE + 1;
+const toId = pageNumber * SITEMAP_SIZE;
 
   const { data: lots, error } =
-    await supabase
-      .from("auction_lots")
-      .select(
-  "id, auction_source, lot_number, created_at"
-)
-.in("auction_source", ["COPART", "IAAI"])
-.order("id", {
-  ascending: true,
-})
-.range(from, to);
+  await supabase
+    .from("auction_lots")
+    .select("id, auction_source, lot_number, created_at")
+    .gte("id", fromId)
+    .lte("id", toId)
+    .in("auction_source", ["COPART", "IAAI"])
+    .order("id", {
+      ascending: true,
+    });
   if (error) {
     console.error(
       `Lot sitemap ${pageNumber} error:`,

@@ -1,6 +1,6 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { supabase } from "../../utils/supabase/client";
-
 export async function generateMetadata({
   searchParams,
 }: {
@@ -51,6 +51,7 @@ export async function generateMetadata({
   };
 }
 const PAGE_SIZE = 24;
+const MAX_ARCHIVE_PAGES = 300;
 
 function formatPrice(price: number | null) {
   if (price === null) {
@@ -88,7 +89,9 @@ export default async function RecentAuctionsPage({
     Number.isInteger(requestedPage) && requestedPage > 0
       ? requestedPage
       : 1;
-
+if (currentPage > MAX_ARCHIVE_PAGES) {
+  notFound();
+}
   const from = (currentPage - 1) * PAGE_SIZE;
   const to = from + PAGE_SIZE - 1;
 
@@ -159,9 +162,15 @@ export default async function RecentAuctionsPage({
 
   const totalRecords = count || 0;
   const totalPages = Math.max(
-    1,
+  1,
+  Math.min(
+    MAX_ARCHIVE_PAGES,
     Math.ceil(totalRecords / PAGE_SIZE)
-  );
+  )
+);
+if (currentPage > totalPages) {
+  notFound();
+}
 
   const paginationPages = Array.from(
   new Set([

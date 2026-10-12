@@ -1,4 +1,8 @@
+
 import { supabase } from "../../utils/supabase/client";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 const BASE_URL = "https://salvagevinhistory.com";
 const SITEMAP_SIZE = 1000;
@@ -6,27 +10,26 @@ const SITEMAP_SIZE = 1000;
 export async function GET() {
   const [
     { count: vehicleCount, error: vehicleError },
-    { count: lotCount, error: lotError },
+    { data: latestLots, error: lotError },
   ] = await Promise.all([
-   supabase
-  .from("sitemap_vins")
-  .select("*", {
-    count: "exact",
-    head: true,
-  }),
-
     supabase
-      .from("auction_lots")
+      .from("sitemap_vins")
       .select("*", {
         count: "exact",
         head: true,
-      })
-      .in("auction_source", ["COPART", "IAAI"]),
+      }),
+
+    supabase
+      .from("auction_lots")
+      .select("id")
+      .in("auction_source", ["COPART", "IAAI"])
+      .order("id", { ascending: false })
+      .limit(1),
   ]);
 
   if (vehicleError || lotError) {
     console.error(
-      "Sitemap index count error:",
+      "Sitemap index error:",
       vehicleError || lotError
     );
 
@@ -38,12 +41,14 @@ export async function GET() {
     );
   }
 
+  const maxLotId = latestLots?.[0]?.id || 0;
+
   const vinSitemapCount = Math.ceil(
     (vehicleCount || 0) / SITEMAP_SIZE
   );
 
   const lotSitemapCount = Math.ceil(
-    (lotCount || 0) / SITEMAP_SIZE
+    maxLotId / SITEMAP_SIZE
   );
 
   const sitemapUrls = [

@@ -38,6 +38,7 @@ type AuctionWithVehicle = AuctionLot & {
 const MIN_MODEL_VEHICLES = 5;
 const MODEL_BATCH_SIZE = 1000;
 const PAGE_SIZE = 24;
+const MAX_ARCHIVE_PAGES = 300;
 const SUPPORTED_MAKES: Record<
   string,
   {
@@ -466,6 +467,9 @@ export default async function VehicleModelPage({
   const { make: makeSlug, model: modelSlug } = await params;
 const query = await searchParams;
 const page = Math.max(1, Number(query.page) || 1);
+if (!Number.isInteger(page) || page > MAX_ARCHIVE_PAGES) {
+  notFound();
+}
   const config = await getModelConfig(makeSlug, modelSlug);
 
   if (!config) {
@@ -484,7 +488,10 @@ const page = Math.max(1, Number(query.page) || 1);
   }
   const totalPages = Math.max(
   1,
-  Math.ceil(auctionCount / PAGE_SIZE)
+  Math.min(
+    MAX_ARCHIVE_PAGES,
+    Math.ceil(auctionCount / PAGE_SIZE)
+  )
 );
 
 if (page > totalPages && auctionCount > 0) {
