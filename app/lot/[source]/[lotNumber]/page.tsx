@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { cache } from "react";
 
 import { supabase } from "../../../../utils/supabase/client";
@@ -118,13 +119,10 @@ const getLot = cache(async function getLot(
 
 
 
-  if (lotError) {
-
-    console.error("Auction lot Supabase error:", lotError);
-
-    return null;
-
-  }
+ if (lotError) {
+  console.error("Auction lot Supabase error:", lotError);
+  throw new Error("Failed to load auction lot");
+}
 
 
 
@@ -581,198 +579,8 @@ export default async function LotPage({
 
 
   if (!record) {
-
-    return (
-
-      <main
-
-        style={{
-
-          minHeight: "100vh",
-
-          background: "#ffffff",
-
-          color: "#171717",
-
-          fontFamily: "Arial, sans-serif",
-
-        }}
-
-      >
-
-        <header
-
-          style={{
-
-            borderBottom: "1px solid #e8e8e8",
-
-          }}
-
-        >
-
-          <div
-
-            style={{
-
-              maxWidth: "1200px",
-
-              margin: "0 auto",
-
-              padding: "20px 24px",
-
-            }}
-
-          >
-
-            <Link
-
-              href="/"
-
-              style={{
-
-                color: "#171717",
-
-                textDecoration: "none",
-
-                fontWeight: "bold",
-
-                fontSize: "20px",
-
-              }}
-
-            >
-
-              Salvage VIN History
-
-            </Link>
-
-          </div>
-
-        </header>
-
-
-
-        <section
-
-          style={{
-
-            maxWidth: "900px",
-
-            margin: "0 auto",
-
-            padding: "80px 24px",
-
-          }}
-
-        >
-
-          <div
-
-            style={{
-
-              fontSize: "13px",
-
-              fontWeight: "bold",
-
-              textTransform: "uppercase",
-
-              letterSpacing: "1px",
-
-              color: "#777",
-
-              marginBottom: "10px",
-
-            }}
-
-          >
-
-            Auction Record
-
-          </div>
-
-
-
-          <h1
-
-            style={{
-
-              fontSize: "38px",
-
-              margin: "0 0 14px",
-
-            }}
-
-          >
-
-            Auction Lot Not Found
-
-          </h1>
-
-
-
-          <p
-
-            style={{
-
-              color: "#666",
-
-              fontSize: "16px",
-
-              lineHeight: 1.6,
-
-              marginBottom: "28px",
-
-            }}
-
-          >
-
-            No archived {source.toUpperCase()} auction
-
-            record was found for lot{" "}
-
-            <strong>{lotNumber}</strong>.
-
-          </p>
-
-
-
-          <Link
-
-            href="/"
-
-            style={{
-
-              display: "inline-block",
-
-              padding: "12px 18px",
-
-              background: "#171717",
-
-              color: "#fff",
-
-              borderRadius: "7px",
-
-              textDecoration: "none",
-
-              fontWeight: "bold",
-
-              fontSize: "14px",
-
-            }}
-
-          >
-
-            Search another vehicle
-
-          </Link>
-
-        </section>
-
-      </main>
-
-    );
-
-  }
+  notFound();
+}
 
 
 

@@ -1,5 +1,6 @@
 import { cache } from "react";
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { supabase } from "../../../utils/supabase/client";
 import VinPhotoGallery from "./VinPhotoGallery";
 import RemoveListingButton from "../../components/RemoveListingButton";
@@ -62,9 +63,9 @@ const getVehicleHistory = cache(async function getVehicleHistory(
       .maybeSingle();
 
   if (vehicleError) {
-    console.error("Vehicle Supabase error:", vehicleError);
-    return null;
-  }
+  console.error("Vehicle Supabase error:", vehicleError);
+  throw new Error("Failed to load VIN record");
+}
 
   if (!vehicle) {
     return null;
@@ -80,11 +81,10 @@ const getVehicleHistory = cache(async function getVehicleHistory(
         nullsFirst: false,
       });
 
-  if (lotsError) {
-    console.error("Auction lots Supabase error:", lotsError);
-    return null;
-  }
-
+ if (lotsError) {
+  console.error("Auction lots Supabase error:", lotsError);
+  throw new Error("Failed to load VIN auction history");
+}
   return {
   vehicle,
   lots: lots || [],
@@ -518,102 +518,9 @@ export default async function VinPage({
   const { vin } = await params;
   const history = await getVehicleHistory(vin);
 
-  if (!history) {
-    return (
-      <main
-        style={{
-          minHeight: "100vh",
-          background: "#fff",
-          fontFamily: "Arial, sans-serif",
-          color: "#171717",
-        }}
-      >
-        <header
-          style={{
-            borderBottom: "1px solid #e8e8e8",
-          }}
-        >
-          <div
-            style={{
-              maxWidth: "1200px",
-              margin: "0 auto",
-              padding: "20px 24px",
-            }}
-          >
-            <Link
-              href="/"
-              style={{
-                color: "#171717",
-                textDecoration: "none",
-                fontWeight: "bold",
-                fontSize: "20px",
-              }}
-            >
-              Salvage VIN History
-            </Link>
-          </div>
-        </header>
-
-        <section
-          style={{
-            maxWidth: "900px",
-            margin: "0 auto",
-            padding: "80px 24px",
-          }}
-        >
-          <div
-            style={{
-              fontSize: "13px",
-              fontWeight: "bold",
-              textTransform: "uppercase",
-              letterSpacing: "1px",
-              color: "#777",
-              marginBottom: "10px",
-            }}
-          >
-            Vehicle Search
-          </div>
-
-          <h1
-            style={{
-              fontSize: "38px",
-              margin: "0 0 14px",
-            }}
-          >
-            Vehicle Not Found
-          </h1>
-
-          <p
-            style={{
-              color: "#666",
-              fontSize: "16px",
-              lineHeight: 1.6,
-              marginBottom: "28px",
-            }}
-          >
-            No archived auction history was found for VIN{" "}
-            <strong>{vin.toUpperCase()}</strong>.
-          </p>
-
-          <Link
-            href="/"
-            style={{
-              display: "inline-block",
-              padding: "12px 18px",
-              background: "#171717",
-              color: "#fff",
-              borderRadius: "7px",
-              textDecoration: "none",
-              fontWeight: "bold",
-              fontSize: "14px",
-            }}
-          >
-            Search another vehicle
-          </Link>
-        </section>
-      </main>
-    );
-  }
+ if (!history) {
+  notFound();
+}
 
   const { vehicle, lots } = history;
 
