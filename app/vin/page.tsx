@@ -164,13 +164,27 @@ const {
 });
 
 if (vehicleError) {
-  console.error(
-    "VIN archive vehicle error:",
-    vehicleError
+  console.error("VIN archive vehicle error:", {
+    message: vehicleError.message,
+    code: vehicleError.code,
+    details: vehicleError.details,
+    hint: vehicleError.hint,
+    searchQuery,
+    currentPage,
+  });
+
+  throw new Error(
+    "Unable to load the VIN archive from the database."
   );
 }
 
-const count = vehicles?.[0]?.total_count ?? 0;
+if (!vehicles) {
+  throw new Error(
+    "VIN archive query returned no response."
+  );
+}
+
+const count = vehicles[0]?.total_count ?? 0;
 
 
   const vehicleList = (vehicles || []) as Vehicle[];
@@ -193,10 +207,13 @@ const count = vehicles?.[0]?.total_count ?? 0;
       });
 
     if (lotError) {
-      console.error("VIN archive lot error:", lotError);
-    }
+  console.error("VIN archive lot error:", lotError);
+  throw new Error(
+    "Unable to load auction records for the VIN archive."
+  );
+}
 
-    lots = (lotData || []) as AuctionLot[];
+lots = (lotData || []) as AuctionLot[];
   }
 
   const archiveItems: VehicleArchiveItem[] =
