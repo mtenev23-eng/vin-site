@@ -153,41 +153,15 @@ if (currentPage > MAX_ARCHIVE_PAGES) {
 
  
 
-let vehicleQuery = supabase
-  .from("vehicles")
-  .select("vin, year, make, model, trim", {
-    count: "exact",
-  });
-
-if (searchQuery) {
-  const searchTerms = searchQuery
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean);
-
-  for (const term of searchTerms) {
-    if (/^\d{4}$/.test(term)) {
-      vehicleQuery = vehicleQuery.eq(
-        "year",
-        Number(term)
-      );
-    } else {
-      vehicleQuery = vehicleQuery.or(
-  `vin.ilike.%${term}%,make.ilike.%${term}%,model.ilike.%${term}%,trim.ilike.%${term}%`
-);
-    }
-  }
-}
 
 const {
   data: vehicles,
-  count,
   error: vehicleError,
-} = await vehicleQuery
-  .order("created_at", {
-    ascending: false,
-  })
-  .range(from, to);
+} = await supabase.rpc("search_vehicle_archive", {
+  p_search: searchQuery,
+  p_limit: PAGE_SIZE,
+  p_offset: from,
+});
 
 if (vehicleError) {
   console.error(
@@ -195,6 +169,9 @@ if (vehicleError) {
     vehicleError
   );
 }
+
+const count = vehicles?.[0]?.total_count ?? 0;
+
 
   const vehicleList = (vehicles || []) as Vehicle[];
   const vins = vehicleList.map((vehicle) => vehicle.vin);
