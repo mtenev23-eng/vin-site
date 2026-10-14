@@ -149,8 +149,7 @@ if (currentPage > MAX_ARCHIVE_PAGES) {
   notFound();
 }
   const from = (currentPage - 1) * PAGE_SIZE;
-  const to = from + PAGE_SIZE - 1;
-
+ 
  
 
 
@@ -159,7 +158,7 @@ const {
   error: vehicleError,
 } = await supabase.rpc("search_vehicle_archive", {
   p_search: searchQuery,
-  p_limit: PAGE_SIZE,
+  p_limit: PAGE_SIZE + 1,
   p_offset: from,
 });
 
@@ -184,10 +183,9 @@ if (!vehicles) {
   );
 }
 
-const count = vehicles[0]?.total_count ?? 0;
+const hasNextPage = vehicles.length > PAGE_SIZE;
 
-
-  const vehicleList = (vehicles || []) as Vehicle[];
+const vehicleList = vehicles.slice(0, PAGE_SIZE) as Vehicle[];
   const vins = vehicleList.map((vehicle) => vehicle.vin);
 
   let lots: AuctionLot[] = [];
@@ -222,15 +220,7 @@ lots = (lotData || []) as AuctionLot[];
       lots: lots.filter((lot) => lot.vin === vehicle.vin),
     }));
 
-  const totalVehicles = count || 0;
-  const totalPages = Math.max(
-  1,
-  Math.min(
-    MAX_ARCHIVE_PAGES,
-    Math.ceil(totalVehicles / PAGE_SIZE)
-  )
-);
-if (currentPage > totalPages && !vehicleError) {
+  if (currentPage > 1 && vehicleList.length === 0) {
   notFound();
 }
 const buildPageUrl = (page: number) => {
@@ -251,31 +241,7 @@ const buildPageUrl = (page: number) => {
     : "/vin";
 };
 
-  const pageNumbers = Array.from(
-    { length: totalPages },
-    (_, index) => index + 1
-  ).filter(
-    (page) =>
-      page <= 3 ||
-      page > totalPages - 3 ||
-      Math.abs(page - currentPage) <= 2
-  );
-
-  const paginationItems: Array<number | "ellipsis"> = [];
-
-  pageNumbers.forEach((page, index) => {
-    const previousPage = pageNumbers[index - 1];
-
-    if (
-      previousPage &&
-      page - previousPage > 1
-    ) {
-      paginationItems.push("ellipsis");
-    }
-
-    paginationItems.push(page);
-  });
-
+  
   return (
     <main
       style={{
@@ -445,8 +411,7 @@ const buildPageUrl = (page: number) => {
                 fontSize: "14px",
               }}
             >
-         {totalVehicles.toLocaleString()} archived{" "}
-{totalVehicles === 1 ? "vehicle" : "vehicles"}
+        
 
 {searchQuery && (
   <>
@@ -472,7 +437,7 @@ const buildPageUrl = (page: number) => {
               fontSize: "14px",
             }}
           >
-            Page {currentPage} of {totalPages}
+           Page {currentPage}
           </div>
         </div>
 
@@ -683,106 +648,58 @@ const buildPageUrl = (page: number) => {
           })}
         </section>
 
-        {/* PAGINATION */}
+        
+{/* PAGINATION */}
 
-        {totalPages > 1 && (
-          <nav
-            aria-label="VIN archive pagination"
-            style={{
-              marginTop: "46px",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              flexWrap: "wrap",
-              gap: "8px",
-            }}
-          >
-            {currentPage > 1 && (
-              <Link
-                href={buildPageUrl(currentPage - 1)}
-                prefetch={false}
-                style={{
-                  padding: "9px 12px",
-                  border: "1px solid #dddddd",
-                  borderRadius: "6px",
-                  color: "#171717",
-                  textDecoration: "none",
-                  fontSize: "14px",
-                }}
-              >
-                ← Previous
-              </Link>
-            )}
+{(currentPage > 1 || hasNextPage) && (
+  <nav
+    aria-label="VIN archive pagination"
+    style={{
+      marginTop: "46px",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      gap: "12px",
+    }}
+  >
+    {currentPage > 1 && (
+      <Link
+        href={buildPageUrl(currentPage - 1)}
+        prefetch={false}
+        style={{
+          padding: "10px 16px",
+          border: "1px solid #ddd",
+          borderRadius: "6px",
+          color: "#171717",
+          textDecoration: "none",
+        }}
+      >
+        ← Previous
+      </Link>
+    )}
 
-            {paginationItems.map((item, index) =>
-              item === "ellipsis" ? (
-                <span
-                  key={`ellipsis-${index}`}
-                  style={{
-                    padding: "9px 5px",
-                    color: "#777",
-                  }}
-                >
-                  …
-                </span>
-              ) : (
-                <Link
-                  key={item}
-                  href={buildPageUrl(item)}
-                  prefetch={false}
-                  aria-current={
-                    item === currentPage
-                      ? "page"
-                      : undefined
-                  }
-                  style={{
-                    minWidth: "38px",
-                    textAlign: "center",
-                    padding: "9px 10px",
-                    border:
-                      item === currentPage
-                        ? "1px solid #171717"
-                        : "1px solid #dddddd",
-                    background:
-                      item === currentPage
-                        ? "#171717"
-                        : "#ffffff",
-                    color:
-                      item === currentPage
-                        ? "#ffffff"
-                        : "#171717",
-                    borderRadius: "6px",
-                    textDecoration: "none",
-                    fontSize: "14px",
-                    fontWeight:
-                      item === currentPage
-                        ? "bold"
-                        : "normal",
-                  }}
-                >
-                  {item}
-                </Link>
-              )
-            )}
+    <span style={{ color: "#777", fontSize: "14px" }}>
+      Page {currentPage}
+    </span>
 
-            {currentPage < totalPages && (
-              <Link
-                href={buildPageUrl(currentPage + 1)}
-                prefetch={false}
-                style={{
-                  padding: "9px 12px",
-                  border: "1px solid #dddddd",
-                  borderRadius: "6px",
-                  color: "#171717",
-                  textDecoration: "none",
-                  fontSize: "14px",
-                }}
-              >
-                Next →
-              </Link>
-            )}
-          </nav>
-        )}
+    {hasNextPage && currentPage < MAX_ARCHIVE_PAGES && (
+      <Link
+        href={buildPageUrl(currentPage + 1)}
+        prefetch={false}
+        style={{
+          padding: "10px 16px",
+          border: "1px solid #ddd",
+          borderRadius: "6px",
+          color: "#171717",
+          textDecoration: "none",
+        }}
+      >
+        Next →
+      </Link>
+    )}
+  </nav>
+)}
+
       </div>
     </main>
   );
