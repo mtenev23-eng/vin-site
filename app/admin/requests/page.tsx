@@ -1,5 +1,14 @@
-import fs from "fs/promises";
+﻿import fs from "fs/promises";
+import { getSupabaseAdmin } from "../../../lib/auth/supabase-admin";
+import ApproveRemovalButton from "./ApproveRemovalButton";
 import path from "path";
+import AdminLogoutButton from "./AdminLogoutButton";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import {
+  ADMIN_COOKIE_NAME,
+  verifyAdminSession,
+} from "../../../lib/auth/session";
 
 const filePath = path.join(process.cwd(), "data", "requests.json");
 
@@ -23,43 +32,27 @@ async function getRequests(): Promise<RequestItem[]> {
   }
 }
 
-export default async function AdminRequestsPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ password?: string }>;
-}) {
-  const { password } = await searchParams;
+export default async function AdminRequestsPage() {
+  const cookieStore = await cookies();
+  const session = cookieStore.get(ADMIN_COOKIE_NAME)?.value;
 
-  const ADMIN_PASSWORD = "martin123";
-
-  if (password !== ADMIN_PASSWORD) {
-    return (
-      <main
-        style={{
-          minHeight: "100vh",
-          backgroundColor: "#f8f9fb",
-          padding: "40px",
-          fontFamily: "Arial, sans-serif",
-        }}
-      >
-        <div
-          style={{
-            maxWidth: "600px",
-            margin: "0 auto",
-            backgroundColor: "white",
-            padding: "32px",
-            borderRadius: "18px",
-            boxShadow: "0 8px 24px rgba(0,0,0,0.06)",
-          }}
-        >
-          <h1>Admin Access Required</h1>
-          <p>This page is protected. Please provide the correct password.</p>
-        </div>
-      </main>
-    );
+  if (!verifyAdminSession(session)) {
+    redirect("/admin/login");
   }
   const requests = await getRequests();
+const { data: paidRemovals, error: paidRemovalsError } =
+  await getSupabaseAdmin()
+    .from("removal_requests")
+    .select(
+      "id, vin, auction_source, lot_number, payment_provider, amount_paid, currency, payment_status, removal_status, created_at"
+    )
+    .order("created_at", { ascending: false });
 
+if (paidRemovalsError) {
+  throw new Error(
+    `Failed to load paid removals: ${paidRemovalsError.message}`
+  );
+}
   return (
     <main
       style={{
@@ -70,9 +63,54 @@ export default async function AdminRequestsPage({
       }}
     >
       <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
-        <h1 style={{ fontSize: "36px", marginBottom: "12px" }}>
+<section style={{ marginBottom: "32px" }}>
+  <h2>Paid VIN Removal Requests</h2>
+
+  {!paidRemovals?.length ? (
+    <p>No paid removal requests found.</p>
+  ) : (
+    <div style={{ display: "grid", gap: "12px" }}>
+      {paidRemovals.map((request) => (
+        <div
+          key={request.id}
+          style={{
+            padding: "20px",
+            background: "white",
+            borderRadius: "12px",
+          }}
+        >
+          <strong>VIN: {request.vin}</strong>
+          <p>
+            {request.auction_source} — Lot {request.lot_number}
+          </p>
+          <p>
+            Payment: {request.payment_provider || "stripe"} —{" "}
+            {request.amount_paid != null
+              ? (request.amount_paid / 100).toFixed(2)
+              : "Unknown"}{" "}
+            {request.currency?.toUpperCase()}
+          </p>
+          <p>Payment status: {request.payment_status}</p>
+          <p>Removal status: {request.removal_status}</p>
+{request.removal_status === "pending_review" &&
+  (request.payment_status === "paid" ||
+    request.payment_status === "finished") && (
+    <ApproveRemovalButton
+      id={request.id}
+      vin={request.vin}
+    />
+  )}
+        </div>
+      ))}
+    </div>
+  )}
+</section>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "16px" }}>
+          <h1 style={{ fontSize: "36px", marginBottom: "12px" }}>
           Admin Requests Dashboard
         </h1>
+          <AdminLogoutButton />
+        </div>
 
         <p style={{ color: "#555", marginBottom: "28px" }}>
           View submitted correction, update, and removal requests.
@@ -173,3 +211,4 @@ export default async function AdminRequestsPage({
     </main>
   );
 }
+

@@ -8,15 +8,14 @@ const SITEMAP_SIZE = 1000;
 export async function GET() {
   try {
     const [
-      { count: vehicleCount, error: vehicleError },
+      { data: latestVins, error: vehicleError },
       { data: latestLots, error: lotError },
     ] = await Promise.all([
       supabase
-        .from("sitemap_vins")
-        .select("*", {
-          count: "exact",
-          head: true,
-        }),
+  .from("vin_sitemap_entries")
+  .select("id")
+  .order("id", { ascending: false })
+  .limit(1),
 
       supabase
         .from("auction_lots")
@@ -49,10 +48,8 @@ console.error(
 
     const maxLotId = latestLots?.[0]?.id || 0;
 
-    const vinSitemapCount = Math.ceil(
-      (vehicleCount || 0) / SITEMAP_SIZE
-    );
-
+   const maxVinId = latestVins?.[0]?.id || 0;
+const vinSitemapCount = Math.ceil(maxVinId / SITEMAP_SIZE);
     const lotSitemapCount = Math.ceil(
       maxLotId / SITEMAP_SIZE
     );

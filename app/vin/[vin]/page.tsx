@@ -6,6 +6,9 @@ import VinPhotoGallery from "./VinPhotoGallery";
 import RemoveListingButton from "../../components/RemoveListingButton";
 import { slugifyModel } from "../../../utils/vehicle-models";
 export const revalidate = 86400;
+export async function generateStaticParams() {
+  return [];
+}
 type Vehicle = {
   vin: string;
   year: number | null;
