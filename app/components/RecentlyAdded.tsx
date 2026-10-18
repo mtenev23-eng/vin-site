@@ -18,6 +18,7 @@ type Vehicle = {
   model: string | null;
 };
 
+
 const getRecentlyAdded = unstable_cache(
   async () => {
     const { data: lots, error } = await supabase
@@ -27,7 +28,7 @@ const getRecentlyAdded = unstable_cache(
       )
       .order("created_at", { ascending: false })
       .order("id", { ascending: false })
-      .limit(24);
+      .limit(120);
 
     if (error) {
       console.error("Recently added lots error:", error);
@@ -63,14 +64,58 @@ const getRecentlyAdded = unstable_cache(
       ])
     );
 
-    return recentLots.map((lot) => ({
+    const candidates = recentLots.map((lot) => ({
       ...lot,
       vehicle: vehicleMap.get(lot.vin) || null,
     }));
+
+    const selected: typeof candidates = [];
+    const usedMakes = new Set<string>();
+    const usedVins = new Set<string>();
+
+    // First pass: select the newest vehicle
+    // from each different manufacturer.
+    for (const lot of candidates) {
+      if (selected.length >= 6) break;
+
+      const make = lot.vehicle?.make
+        ?.trim()
+        .toLowerCase();
+
+      if (!make || usedMakes.has(make)) continue;
+      if (usedVins.has(lot.vin)) continue;
+
+      selected.push(lot);
+      usedMakes.add(make);
+      usedVins.add(lot.vin);
+    }
+
+    // Second pass: fill remaining positions
+    // if fewer than six manufacturers were found.
+    for (const lot of candidates) {
+      if (selected.length >= 6) break;
+      if (usedVins.has(lot.vin)) continue;
+
+      selected.push(lot);
+      usedVins.add(lot.vin);
+    }
+
+    // Display selected vehicles newest first.
+    return selected.sort((a, b) => {
+      const dateA = a.created_at || "";
+      const dateB = b.created_at || "";
+
+      if (dateA !== dateB) {
+        return dateB.localeCompare(dateA);
+      }
+
+      return b.id - a.id;
+    });
   },
-  ["recently-added-auction-lots-v1"],
+  ["recently-added-auction-lots-v2"],
   { revalidate: 300 }
 );
+
 
 export default async function RecentlyAdded() {
   const lots = await getRecentlyAdded();
