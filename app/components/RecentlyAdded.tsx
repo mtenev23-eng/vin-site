@@ -76,7 +76,7 @@ const getRecentlyAdded = unstable_cache(
     // First pass: select the newest vehicle
     // from each different manufacturer.
     for (const lot of candidates) {
-      if (selected.length >= 6) break;
+      if (selected.length >= 8) break;
 
       const make = lot.vehicle?.make
         ?.trim()
@@ -93,7 +93,7 @@ const getRecentlyAdded = unstable_cache(
     // Second pass: fill remaining positions
     // if fewer than six manufacturers were found.
     for (const lot of candidates) {
-      if (selected.length >= 6) break;
+      if (selected.length >= 8) break;
       if (usedVins.has(lot.vin)) continue;
 
       selected.push(lot);
@@ -224,6 +224,30 @@ export default async function RecentlyAdded() {
           })}
         </div>
       </div>
+      
+<div
+  style={{
+    marginTop: "26px",
+    textAlign: "center",
+  }}
+>
+  <Link
+    href="/recent-auctions"
+    style={{
+      display: "inline-block",
+      padding: "12px 24px",
+      background: "#171717",
+      color: "#ffffff",
+      borderRadius: "8px",
+      fontSize: "14px",
+      fontWeight: 600,
+      textDecoration: "none",
+    }}
+  >
+    View All Recent Auctions →
+  </Link>
+</div>
+
     </section>
   );
 }
