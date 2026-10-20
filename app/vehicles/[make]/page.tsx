@@ -282,7 +282,7 @@ async function getModelSummaries(databaseMake: string) {
   const { data, error } = await supabase
     .from("vehicles")
     .select("model")
-    .eq("make", databaseMake)
+    .ilike("make", databaseMake);
 
   if (error) {
     console.error("Model summary error:", error);
@@ -366,7 +366,7 @@ async function getVehicleArchive(
         count: "exact",
       }
     )
-    .eq("make", databaseMake)
+    .ilike("make", databaseMake)
     .order("created_at", {
       ascending: false,
     });
