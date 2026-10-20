@@ -338,7 +338,7 @@ async function getVehicleArchive(
   page: number
 ) {
   const from = (page - 1) * PAGE_SIZE;
-  const to = from + PAGE_SIZE - 1;
+const to = from + PAGE_SIZE;
 
   const prefixMap: Record<string, string> = {
     "1 Series": "1",
@@ -358,15 +358,10 @@ async function getVehicleArchive(
    * STEP 1:
    * Fetch only the 24 vehicles needed for this page.
    */
-  let vehicleQuery = supabase
-    .from("vehicles")
-    .select(
-      "vin, year, make, model, trim",
-      {
-        count: "exact",
-      }
-    )
-    .ilike("make", databaseMake)
+ let vehicleQuery = supabase
+  .from("vehicles")
+  .select("vin, year, make, model, trim")
+  .ilike("make", databaseMake)
     .order("latest_auction_date", {
   ascending: false,
   nullsFirst: false,
@@ -390,34 +385,37 @@ async function getVehicleArchive(
     }
   }
 
-  const {
-    data: vehicles,
-    error: vehicleError,
-    count,
-  } = await vehicleQuery.range(from, to);
+ const {
+  data: vehicles,
+  error: vehicleError,
+} = await vehicleQuery.range(from, to);
 
-  if (vehicleError) {
-    console.error(
-      "Vehicle archive vehicle query error:",
-      vehicleError
-    );
+if (vehicleError) {
+  console.error(
+    "Vehicle archive vehicle query error:",
+    vehicleError
+  );
 
-    return {
-      cards: [] as VehicleCard[],
-      totalCount: 0,
-      failed: true,
-    };
-  }
+  return {
+    cards: [] as VehicleCard[],
+    hasNextPage: false,
+    failed: true,
+  };
+}
 
-  const typedVehicles = (vehicles || []) as Vehicle[];
+const fetchedVehicles = (vehicles || []) as Vehicle[];
 
-  if (typedVehicles.length === 0) {
-    return {
-      cards: [] as VehicleCard[],
-      totalCount: count || 0,
-      failed: false,
-    };
-  }
+const hasNextPage = fetchedVehicles.length > PAGE_SIZE;
+
+const typedVehicles = fetchedVehicles.slice(0, PAGE_SIZE);
+
+if (typedVehicles.length === 0) {
+  return {
+    cards: [] as VehicleCard[],
+    hasNextPage: false,
+    failed: false,
+  };
+}
 
   /*
    * STEP 2:
@@ -454,17 +452,17 @@ async function getVehicleArchive(
     });
 
   if (lotError) {
-    console.error(
-      "Vehicle archive lot query error:",
-      lotError
-    );
+  console.error(
+    "Vehicle archive lot query error:",
+    lotError
+  );
 
-    return {
-      cards: [] as VehicleCard[],
-      totalCount: count || 0,
-      failed: true,
-    };
-  }
+  return {
+    cards: [] as VehicleCard[],
+    hasNextPage: false,
+    failed: true,
+  };
+}
 
   /*
    * Because lots are newest-first, keep the first
@@ -492,11 +490,11 @@ async function getVehicleArchive(
         null,
     }));
 
-  return {
-    cards,
-    totalCount: count || 0,
-    failed: false,
-  };
+ return {
+  cards,
+  hasNextPage,
+  failed: false,
+};
 }
 
 function getPaginationPages(currentPage: number, totalPages: number) {
@@ -673,25 +671,29 @@ const bmwModelGroups = isBmw
     })).filter((item) => item.vehicleCount > 0)
   : [];
 
-const { cards, totalCount, failed } = await getVehicleArchive(
-    config.databaseMake,
-    selectedModel,
-    page
-  );
-
-  const totalPages = Math.max(
-  1,
-  Math.min(
-    MAX_ARCHIVE_PAGES,
-    Math.ceil(totalCount / PAGE_SIZE)
-  )
+const { cards, hasNextPage, failed } = await getVehicleArchive(
+  config.databaseMake,
+  selectedModel,
+  page
 );
 
-  if (page > totalPages && totalCount > 0) {
-    notFound();
-  }
+if (page > MAX_ARCHIVE_PAGES) {
+  notFound();
+}
 
-  const paginationPages = getPaginationPages(page, totalPages);
+if (!failed && page > 1 && cards.length === 0) {
+  notFound();
+}
+
+const totalPages = Math.min(
+  MAX_ARCHIVE_PAGES,
+  page + (hasNextPage ? 1 : 0)
+);
+
+const paginationPages = getPaginationPages(
+  page,
+  Math.min(MAX_ARCHIVE_PAGES, page + (hasNextPage ? 1 : 0))
+).filter((pageNumber) => pageNumber >= Math.max(1, page - 2));
 
   return (
     <main
@@ -814,7 +816,7 @@ const { cards, totalCount, failed } = await getVehicleArchive(
   >
     {failed
   ? "Archive temporarily unavailable"
-  : `${totalCount.toLocaleString()} archived vehicles`}
+  : "Browse archived vehicles"}
   </span>
 </div>
 
@@ -924,13 +926,11 @@ const { cards, totalCount, failed } = await getVehicleArchive(
             >
               {failed ? (
   <>Archive data is temporarily unavailable. Please try again shortly.</>
+) : cards.length === 0 ? (
+  <>No archived vehicles found.</>
 ) : (
   <>
-    {totalCount.toLocaleString()}{" "}
-    {totalCount === 1
-      ? "archived vehicle"
-      : "archived vehicles"}{" "}
-    found.
+    Showing {cards.length} archived vehicles on page {page}.
   </>
 )}
             </p>
@@ -1261,7 +1261,7 @@ const { cards, totalCount, failed } = await getVehicleArchive(
                 );
               })}
 
-              {page < totalPages && (
+           {hasNextPage && page < MAX_ARCHIVE_PAGES && (
                 <Link
                   href={makeArchiveUrl(
                     normalizedMakeSlug,

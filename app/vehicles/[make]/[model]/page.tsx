@@ -95,43 +95,28 @@ dodge: { databaseMake: "DODGE", displayName: "Dodge" },
 
 
 
-const getModelsForMake = cache(async (databaseMake: string) => {
-  const models: string[] = [];
 
-  let from = 0;
+const getModelsForMake = cache(async (databaseMake: string): Promise<string[]> => {
+ const { data, error } = await supabase.rpc(
+  "get_vehicle_model_counts" as any,
+  { requested_make: databaseMake } as any
+);
 
-  while (true) {
-    const { data, error } = await supabase
-      .from("vehicles")
-      .select("model")
-      .ilike("make", databaseMake)
-      .not("model", "is", null)
-      .range(from, from + MODEL_BATCH_SIZE - 1);
-
-    if (error) {
-      console.error("Model lookup error:", error);
-      return [];
-    }
-
-    if (!data || data.length === 0) {
-      break;
-    }
-
-    for (const row of data) {
-      if (row.model) {
-        models.push(row.model);
-      }
-    }
-
-    if (data.length < MODEL_BATCH_SIZE) {
-      break;
-    }
-
-    from += MODEL_BATCH_SIZE;
+  if (error) {
+    console.error("Model lookup error:", error);
+    return [];
   }
 
-  return models;
+  const rows = (data || []) as {
+  model: string;
+  vehicle_count: number;
+}[];
+
+return rows.flatMap((row) =>
+  Array<string>(Number(row.vehicle_count)).fill(row.model)
+);
 });
+
 
 const getModelConfig = cache(
   async (makeSlug: string, modelSlug: string) => {
@@ -143,58 +128,56 @@ const getModelConfig = cache(
     if (!makeConfig) {
       return null;
     }
-
+console.time("MODEL LOOKUP");
     const models = await getModelsForMake(makeConfig.databaseMake);
-if (normalizedMakeSlug === "bmw") {
-  const bmwGroups: Record<string, { name: string; prefix: string }> = {
-    "1-series": { name: "1 Series", prefix: "1" },
-    "2-series": { name: "2 Series", prefix: "2" },
-    "3-series": { name: "3 Series", prefix: "3" },
-    "4-series": { name: "4 Series", prefix: "4" },
-    "5-series": { name: "5 Series", prefix: "5" },
-    "6-series": { name: "6 Series", prefix: "6" },
-    "7-series": { name: "7 Series", prefix: "7" },
-    "8-series": { name: "8 Series", prefix: "8" },
-    "z-series": { name: "Z Series", prefix: "Z" },
-    "x-series": { name: "X Series", prefix: "X" },
-    "m": { name: "M", prefix: "M" },
-  };
+console.timeEnd("MODEL LOOKUP");
+    if (normalizedMakeSlug === "bmw") {
+      const bmwGroups: Record<string, { name: string; prefix: string }> = {
+        "1-series": { name: "1 Series", prefix: "1" },
+        "2-series": { name: "2 Series", prefix: "2" },
+        "3-series": { name: "3 Series", prefix: "3" },
+        "4-series": { name: "4 Series", prefix: "4" },
+        "5-series": { name: "5 Series", prefix: "5" },
+        "6-series": { name: "6 Series", prefix: "6" },
+        "7-series": { name: "7 Series", prefix: "7" },
+        "8-series": { name: "8 Series", prefix: "8" },
+        "z-series": { name: "Z Series", prefix: "Z" },
+        "x-series": { name: "X Series", prefix: "X" },
+        m: { name: "M", prefix: "M" },
+      };
 
-  const group = bmwGroups[normalizedModelSlug];
+      const group = bmwGroups[normalizedModelSlug];
 
-  if (group) {
-    const rawModels = [
-      ...new Set(
-        models.filter((model) =>
-          displayModel(model)
-            .toUpperCase()
-            .startsWith(group.prefix.toUpperCase())
-        )
-      ),
-    ];
+      if (group) {
+        const rawModels = [
+          ...new Set(
+            models.filter((model) =>
+              displayModel(model)
+                .toUpperCase()
+                .startsWith(group.prefix.toUpperCase())
+            )
+          ),
+        ];
 
-    if (rawModels.length === 0) {
-      return null;
+        if (rawModels.length === 0) return null;
+
+        const vehicleCount = models.filter((model) =>
+          rawModels.includes(model)
+        ).length;
+
+        if (vehicleCount < MIN_MODEL_VEHICLES) return null;
+
+        return {
+          make: makeConfig.databaseMake,
+          model: group.name,
+          rawModels,
+          makeName: makeConfig.displayName,
+          modelName: group.name,
+          vehicleCount,
+        };
+      }
     }
 
-    const vehicleCount = models.filter((model) =>
-      rawModels.includes(model)
-    ).length;
-
-    if (vehicleCount < MIN_MODEL_VEHICLES) {
-      return null;
-    }
-
-    return {
-      make: makeConfig.databaseMake,
-      model: group.name,
-      rawModels,
-      makeName: makeConfig.displayName,
-      modelName: group.name,
-      vehicleCount,
-    };
-  }
-}
     const groupedModels = new Map<
   string,
   {
