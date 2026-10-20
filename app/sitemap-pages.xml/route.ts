@@ -201,16 +201,16 @@ export async function GET() {
   const vehicles = await fetchAllVehicles();
 
   const urls: {
-    url: string;
-    lastModified?: Date;
-  }[] = [
-    { url: BASE_URL },
-    { url: `${BASE_URL}/vin` },
-    { url: `${BASE_URL}/recent-auctions` },
-    { url: `${BASE_URL}/faq` },
-    { url: `${BASE_URL}/removal-policy` },
-  ];
-
+  url: string;
+  lastModified?: Date;
+}[] = [
+  { url: BASE_URL },
+  { url: `${BASE_URL}/vin` },
+  { url: `${BASE_URL}/recent-auctions` },
+  { url: `${BASE_URL}/recently-added` },
+  { url: `${BASE_URL}/faq` },
+  { url: `${BASE_URL}/removal-policy` },
+];
   for (const makeSlug of Object.values(MAKE_SLUGS)) {
     urls.push({
       url: `${BASE_URL}/vehicles/${makeSlug}`,

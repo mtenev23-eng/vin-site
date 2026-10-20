@@ -735,21 +735,22 @@ records by VIN, lot number, make or model.
               textAlign: "center",
             }}
           >
-            <button
-              onClick={() => router.push("/recent-auctions")}
-              style={{
-                padding: "13px 22px",
-                background: "#171717",
-                color: "#ffffff",
-                border: "none",
-                borderRadius: "8px",
-                fontSize: "15px",
-                fontWeight: "bold",
-                cursor: "pointer",
-              }}
-            >
-              View All Auction Sales →
-            </button>
+            <Link
+  href="/recent-auctions"
+  style={{
+    display: "inline-block",
+    padding: "13px 22px",
+    background: "#171717",
+    color: "#ffffff",
+    border: "none",
+    borderRadius: "8px",
+    fontSize: "15px",
+    fontWeight: "bold",
+    textDecoration: "none",
+  }}
+>
+  View All Auction Sales →
+</Link>
           </div>
         </div>
       </section>

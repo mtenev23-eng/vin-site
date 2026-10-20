@@ -232,8 +232,8 @@ export default async function RecentlyAdded() {
   }}
 >
   <Link
-    href="/recent-auctions"
-    style={{
+  href="/recently-added"
+  style={{
       display: "inline-block",
       padding: "12px 24px",
       background: "#171717",
@@ -244,7 +244,7 @@ export default async function RecentlyAdded() {
       textDecoration: "none",
     }}
   >
-    View All Recent Auctions →
+    View All Recently Added →
   </Link>
 </div>
 
