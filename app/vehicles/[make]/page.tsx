@@ -367,9 +367,11 @@ async function getVehicleArchive(
       }
     )
     .ilike("make", databaseMake)
-    .order("created_at", {
-      ascending: false,
-    });
+    .order("latest_auction_date", {
+  ascending: false,
+  nullsFirst: false,
+})
+.order("vin", { ascending: true });
 
   if (selectedModel) {
     if (
