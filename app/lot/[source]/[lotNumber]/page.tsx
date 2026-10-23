@@ -1,7 +1,8 @@
+
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { cache } from "react";
-
+import { unstable_cache } from "next/cache";
 import { supabase } from "../../../../utils/supabase/client";
 import RemoveListingButton from "../../../components/RemoveListingButton";
 import AuctionPhotoGallery from "../../../components/AuctionPhotoGallery";
@@ -161,6 +162,46 @@ return {
   vehicle: vehicle || null,
 };
 });
+
+const getCachedSimilarLots = unstable_cache(
+  async (make: string, model: string) => {
+    const { data, error } = await supabase
+      .from("vehicle_auction_archive")
+      .select(`
+        auction_id,
+        auction_source,
+        lot_number,
+        vin,
+        final_bid,
+        auction_date,
+        mileage,
+        primary_damage,
+        image_urls,
+        year,
+        make,
+        model,
+        trim
+      `)
+      .eq("make", make)
+      .eq("model", model)
+      .not("auction_date", "is", null)
+      .order("auction_date", {
+        ascending: false,
+        nullsFirst: false,
+      })
+      .limit(9);
+
+    if (error) {
+      console.error("Similar auction lookup error:", error);
+      throw new Error("Failed to load similar auctions");
+    }
+
+    return data || [];
+  },
+  ["similar-auction-lots-v1"],
+  { revalidate: 86400 }
+);
+
 async function getSimilarLots(
   make: string | null,
   model: string | null,
@@ -170,43 +211,18 @@ async function getSimilarLots(
     return [];
   }
 
-  const { data, error } = await supabase
-    .from("vehicle_auction_archive")
-    .select(`
-      auction_id,
-      auction_source,
-      lot_number,
-      vin,
-      final_bid,
-      auction_date,
-      mileage,
-      primary_damage,
-      image_urls,
-      year,
-      make,
-      model,
-      trim
-    `)
-    .eq("make", make)
-    .eq("model", model)
-    .neq("auction_id", currentLotId)
-    .not("auction_date", "is", null)
-    .order("auction_date", {
-      ascending: false,
-      nullsFirst: false,
-    })
-    .limit(8);
+  try {
+    const lots = await getCachedSimilarLots(make, model);
 
-  if (error) {
-    console.error(
-      "Similar auction lookup error:",
-      error
-    );
+    return lots
+      .filter((lot) => lot.auction_id !== currentLotId)
+      .slice(0, 8);
+  } catch (error) {
+    console.error("Cached similar auctions error:", error);
     return [];
   }
-
-  return data || [];
 }
+
 async function getModelAuctionCount(
   make: string | null,
   model: string | null
