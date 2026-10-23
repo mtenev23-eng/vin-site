@@ -33,7 +33,69 @@ function numberFromText(value) {
 
   return cleaned ? Number(cleaned) : null;
 }
+function parseAuctionDate(value) {
+  const cleaned = clean(value);
 
+  if (!cleaned) {
+    return null;
+  }
+
+  let match = cleaned.match(
+    /^(\d{4})-(\d{1,2})-(\d{1,2})/
+  );
+
+  if (match) {
+    return new Date(
+      Date.UTC(
+        Number(match[1]),
+        Number(match[2]) - 1,
+        Number(match[3])
+      )
+    );
+  }
+
+  match = cleaned.match(
+    /^(\d{1,2})\/(\d{1,2})\/(\d{4})/
+  );
+
+  if (match) {
+    return new Date(
+      Date.UTC(
+        Number(match[3]),
+        Number(match[1]) - 1,
+        Number(match[2])
+      )
+    );
+  }
+
+  return null;
+}
+
+function isTooRecentAuctionDate(value) {
+  const auctionDate = parseAuctionDate(value);
+
+  if (!auctionDate) {
+    return true;
+  }
+
+  const now = new Date();
+
+  const today = new Date(
+    Date.UTC(
+      now.getUTCFullYear(),
+      now.getUTCMonth(),
+      now.getUTCDate()
+    )
+  );
+
+  const sevenDaysAgo = new Date(today);
+
+  sevenDaysAgo.setUTCDate(
+    sevenDaysAgo.getUTCDate() - 7
+  );
+
+  return auctionDate > sevenDaysAgo;
+}
 /*
   Get a field directly from AutoBidCar's characteristics list.
 
@@ -132,7 +194,33 @@ async function scrapeAutoBidCar() {
 
   const html = await response.text();
   const $ = cheerio.load(html);
+const normalizedPageText = $("body")
+  .text()
+  .replace(/\s+/g, " ")
+  .trim();
 
+const isNotYetSold =
+  /Sale Date\s*Not yet sold/i.test(normalizedPageText) ||
+  /\bNot yet sold\b/i.test(normalizedPageText) ||
+  /\bcurrent bid\b/i.test(normalizedPageText);
+
+const hasConfirmedSoldText =
+  /This vehicle was sold at/i.test(normalizedPageText) ||
+  /vehicle was sold at/i.test(normalizedPageText);
+
+if (isNotYetSold) {
+  console.log(
+    "\nSKIPPED: AutoBidCar still shows this vehicle as not yet sold / active."
+  );
+  process.exit(2);
+}
+
+if (!hasConfirmedSoldText) {
+  console.log(
+    "\nSKIPPED: Could not positively confirm that this auction has ended."
+  );
+  process.exit(2);
+}
   /*
     STEP 2:
     Find AutoBidCar's structured Vehicle JSON-LD.
@@ -212,7 +300,21 @@ async function scrapeAutoBidCar() {
   const auctionDate = clean(
     vehicleJson.purchaseDate
   );
+if (!auctionDate) {
+  console.log(
+    "\nSKIPPED: Vehicle has no confirmed auction date."
+  );
 
+  process.exit(2);
+}
+
+if (isTooRecentAuctionDate(auctionDate)) {
+  console.log(
+    `\nSKIPPED: Auction date ${auctionDate} is too recent to safely archive.`
+  );
+
+  process.exit(2);
+}
   const finalBid = numberFromText(
     vehicleJson.offers?.price
   );
@@ -323,7 +425,7 @@ if (!car.lot_number) {
   process.exit(2);
 }
 
-if (!car.final_bid || car.final_bid < 5000) {
+if (!car.final_bid || car.final_bid < 1000) {
   console.log(
     `\nSKIPPED: Final bid is ${
       car.final_bid === null
@@ -331,6 +433,7 @@ if (!car.final_bid || car.final_bid < 5000) {
         : `$${car.final_bid.toLocaleString()}`
     }.`
   );
+
   process.exit(2);
 }
 
@@ -348,7 +451,7 @@ console.log("\nData quality check passed.");
 const { data: existingLot, error: existingLotError } =
   await supabase
     .from("auction_lots")
-    .select("id")
+    .select("id, final_bid")
     .eq("auction_source", car.auction_source)
     .eq("lot_number", car.lot_number)
     .maybeSingle();
@@ -360,6 +463,27 @@ if (existingLotError) {
 }
 
 if (existingLot) {
+  const oldBid =
+    existingLot.final_bid === null
+      ? null
+      : Number(existingLot.final_bid);
+
+  const newBid = Number(car.final_bid);
+
+ if (oldBid !== newBid) {
+  console.log(
+    `PRICE DISCREPANCY: ${car.auction_source} ${car.lot_number} | ` +
+    `${oldBid === null ? "missing" : `$${oldBid.toLocaleString()}`} ` +
+    `-> $${newBid.toLocaleString()}`
+  );
+
+  console.log(
+    "Existing price preserved pending review."
+  );
+
+  process.exit(3);
+}
+
   console.log(
     `ALREADY ARCHIVED: ${car.auction_source} ${car.lot_number}`
   );

@@ -1,6 +1,90 @@
 const fs = require("fs");
 const path = require("path");
 const { createClient } = require("@supabase/supabase-js");
+function isMissingVehicleValue(value) {
+  return (
+    value == null ||
+    String(value).trim() === "" ||
+    ["unknown", "n/a", "null", "undefined"].includes(
+      String(value).trim().toLowerCase()
+    )
+  );
+}
+
+async function decodeMissingModel(vin, year, make) {
+  if (!/^[A-HJ-NPR-Z0-9]{17}$/i.test(String(vin || ""))) {
+    return null;
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 5000);
+
+  try {
+    const url =
+      `https://vpic.nhtsa.dot.gov/api/vehicles/DecodeVinValues/` +
+      `${encodeURIComponent(vin)}?format=json`;
+
+    const response = await fetch(url, {
+      signal: controller.signal,
+    });
+
+    if (!response.ok) return null;
+
+    const data = await response.json();
+    const decoded = data.Results?.[0];
+
+    if (!decoded || String(decoded.ErrorCode).trim() !== "0") {
+      return null;
+    }
+
+    const model = String(decoded.Model || "").trim();
+    const decodedYear = Number(decoded.ModelYear);
+
+    if (!model || !year || decodedYear !== Number(year)) {
+      return null;
+    }
+
+    // Require a matching manufacturer.
+    const normalize = (value) =>
+      String(value || "")
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, "");
+
+    const aliases = {
+      bmw: ["bmw"],
+      mercedesbenz: ["mercedesbenz", "mercedes"],
+      landrover: ["landrover"],
+      rollsroyce: ["rollsroyce"],
+    };
+
+    const expectedMake = normalize(make);
+    const decodedMake = normalize(decoded.Make);
+
+    const acceptedMakes = aliases[expectedMake] || [expectedMake];
+
+    if (!acceptedMakes.includes(decodedMake)) {
+      return null;
+    }
+
+    // Avoid replacing Unknown with generic placeholders.
+    if (
+      ["unknown", "not applicable", "other", "n/a"].includes(
+        model.toLowerCase()
+      )
+    ) {
+      return null;
+    }
+
+    return model;
+  } catch (error) {
+    console.warn(
+      `NHTSA lookup skipped for ${vin}: ${error.message}`
+    );
+    return null;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
 
 require("dotenv").config({ path: ".env.local" });
 
@@ -30,7 +114,90 @@ const CATALOG_URL = `${BASE_URL}/auction?sold=1`;
 
 const REQUEST_DELAY_MS = 3000;
 const MIN_FINAL_BID = 1000;
+
+const cliArgs = process.argv.slice(2);
+const TEST_URL_MODE =
+  cliArgs[0]?.toLowerCase() === "test";
+
+const TEST_URL =
+  TEST_URL_MODE && cliArgs[1]
+    ? cliArgs[1].trim()
+    : null;
+const MAKE_BACKFILL_MODE =
+  cliArgs[0]?.toLowerCase() === "make";
+const AUTO_MODE =
+  cliArgs.length === 0;
+  const MAKE_QUEUE = [
+  "bmw",
+  "mercedes-benz",
+  "audi",
+  "porsche",
+  "lexus",
+  "toyota",
+  "honda",
+  "ford",
+  "chevrolet",
+  "dodge",
+  "jeep",
+  "tesla",
+  "land-rover",
+  "jaguar",
+  "cadillac",
+  "infiniti",
+  "acura",
+  "volkswagen",
+  "volvo",
+  "subaru",
+  "mazda",
+  "nissan",
+  "kia",
+  "hyundai",
+  "genesis",
+  "gmc",
+  "ram",
+  "buick",
+  "chrysler",
+  "lincoln",
+  "mitsubishi",
+  "mini",
+  "alfa-romeo",
+  "maserati",
+  "bentley",
+  "aston-martin",
+  "ferrari",
+  "lamborghini",
+  "mclaren",
+  "rolls-royce",
+  "maybach",
+  "lotus",
+  "pontiac",
+  "mercury",
+  "saab",
+  "smart",
+  "suzuki",
+  "fiat",
+  "citroen",
+  "daihatsu",
+  "hummer",
+  "mg",
+];
+const MAKE_SLUG =
+  MAKE_BACKFILL_MODE && cliArgs[1]
+    ? cliArgs[1].trim().toLowerCase()
+    : null;
+const START_PAGE =
+  MAKE_BACKFILL_MODE && cliArgs[2]
+    ? Math.max(1, Number(cliArgs[2]))
+    : 1;
+if (MAKE_BACKFILL_MODE && !MAKE_SLUG) {
+  console.error(
+    "Missing make. Example: node scripts\\crawlOpenDataCar.js make bmw"
+  );
+  process.exit(1);
+}
+
 const MIN_AUCTION_DATE = "2026-01-01";
+
 const IAAI_RECOVERY_MODE = false;
 const DATA_DIR = path.join(__dirname, "..", "data");
 
@@ -39,6 +206,10 @@ const CHECKPOINT_FILE = path.join(
   "opendatacar-checkpoint.json"
 );
 
+const PROGRESS_FILE = path.join(
+  DATA_DIR,
+  "opendatacar-progress.json"
+);
 fs.mkdirSync(DATA_DIR, { recursive: true });
 
 const sleep = (ms) =>
@@ -161,6 +332,17 @@ async function fetchPage(url) {
 // ========================================
 
 function getCatalogUrl(page) {
+  if (MAKE_BACKFILL_MODE) {
+    const base =
+      `${BASE_URL}/auction/${MAKE_SLUG}/all?sold=1`;
+
+    if (page === 1) {
+      return base;
+    }
+
+    return `${base}&page=${page}`;
+  }
+
   if (page === 1) {
     return `${BASE_URL}/auction?sold=1`;
   }
@@ -328,6 +510,28 @@ function extractAuctionDate(html) {
 
   return date.toISOString().slice(0, 10);
 }
+
+
+function detectActiveAuction(html) {
+  const hasPlaceBidButton =
+    /id=["']xai-bid-btn["']/i.test(html) ||
+    /window\.xaiPlaceBid\s*\(/i.test(html);
+
+  const hasBuyNowRow =
+    /\bbid-buynow-row\b/i.test(html);
+
+  if (hasPlaceBidButton) {
+    return "Place Bid button";
+  }
+
+  if (hasBuyNowRow) {
+    return "Buy Now row";
+  }
+
+  return null;
+}
+
+
 
 // ========================================
 // JSON-LD
@@ -1219,6 +1423,26 @@ async function saveToSupabase(car) {
   // 3. INSERT OR SAFELY ENRICH VEHICLE
   // ----------------------------------------
 
+const needsModel =
+  isMissingVehicleValue(car.model) &&
+  (!existingVehicle ||
+    isMissingVehicleValue(existingVehicle.model));
+
+if (needsModel) {
+  const decodedModel = await decodeMissingModel(
+    car.vin,
+    car.year,
+    car.make
+  );
+
+  if (decodedModel) {
+    car.model = decodedModel;
+    console.log(
+      `NHTSA model recovered: ${car.vin} -> ${decodedModel}`
+    );
+  }
+}
+
   if (!existingVehicle) {
     const newVehicle = {
       vin: car.vin,
@@ -1240,55 +1464,52 @@ async function saveToSupabase(car) {
       );
     }
   } else {
-    const updates = {};
+    
+const updates = {};
 
-    // Only fill fields that are currently missing.
-    // Never replace existing good vehicle data.
+// Fill missing values without overwriting valid data.
 
-    if (
-      existingVehicle.year === null &&
-      car.year !== null
-    ) {
-      updates.year = car.year;
-    }
+if (
+  existingVehicle.year == null &&
+  car.year != null
+) {
+  updates.year = car.year;
+}
 
-    if (
-      !existingVehicle.make &&
-      car.make
-    ) {
-      updates.make = car.make;
-    }
+if (
+  isMissingVehicleValue(existingVehicle.make) &&
+  !isMissingVehicleValue(car.make)
+) {
+  updates.make = car.make;
+}
 
-    if (
-      !existingVehicle.model &&
-      car.model
-    ) {
-      updates.model = car.model;
-    }
+if (
+  isMissingVehicleValue(existingVehicle.model) &&
+  !isMissingVehicleValue(car.model)
+) {
+  updates.model = car.model;
+}
 
-    if (
-      !existingVehicle.trim &&
-      car.trim
-    ) {
-      updates.trim = car.trim;
-    }
+if (
+  isMissingVehicleValue(existingVehicle.trim) &&
+  !isMissingVehicleValue(car.trim)
+) {
+  updates.trim = car.trim;
+}
 
-    if (
-      Object.keys(updates).length > 0
-    ) {
-      const {
-        error: vehicleUpdateError,
-      } = await supabase
-        .from("vehicles")
-        .update(updates)
-        .eq("vin", car.vin);
+if (Object.keys(updates).length > 0) {
+  const { error: vehicleUpdateError } = await supabase
+    .from("vehicles")
+    .update(updates)
+    .eq("vin", car.vin);
 
-      if (vehicleUpdateError) {
-        throw new Error(
-          `Vehicle update failed: ${vehicleUpdateError.message}`
-        );
-      }
-    }
+  if (vehicleUpdateError) {
+    throw new Error(
+      `Vehicle update failed: ${vehicleUpdateError.message}`
+    );
+  }
+}
+
   }
 
   // ----------------------------------------
@@ -1416,11 +1637,95 @@ async function main() {
   let skippedPrice = 0;
   let skippedDate = 0;
   let skippedInvalid = 0;
-  let skippedImages = 0;
+let skippedImages = 0;
+let skippedActive = 0;
 
-  let failed = 0;
+let failed = 0;
 let consecutiveOldPages = 0;
+let runFailed = false;
+let lastCatalogPage = null;
+let stopReason = null;
 
+function savePageProgress(nextPage) {
+  const progress = {
+    mode: MAKE_BACKFILL_MODE ? "make" : "recent",
+    makeSlug: MAKE_BACKFILL_MODE ? MAKE_SLUG : null,
+    nextPage,
+    updatedAt: new Date().toISOString(),
+  };
+
+  const tempFile = PROGRESS_FILE + ".tmp";
+
+  fs.writeFileSync(
+    tempFile,
+    JSON.stringify(progress, null, 2),
+    "utf8"
+  );
+
+  fs.renameSync(tempFile, PROGRESS_FILE);
+}
+
+  if (TEST_URL_MODE) {
+    if (!TEST_URL) {
+      console.error(
+        "Missing test URL. Example: node scripts\\crawlOpenDataCar.js test \"https://opendatacar.com/auction/...\""
+      );
+      return;
+    }
+
+    const detailUrl = TEST_URL.replace(
+      "https://opendatacar.com/auction/",
+      "https://opendatacar.com/en/auction/"
+    );
+
+    console.log("");
+    console.log("========================================");
+    console.log("OPENDATACAR SINGLE PAGE TEST");
+    console.log("========================================");
+    console.log(`URL: ${detailUrl}`);
+
+    const html = await fetchPage(detailUrl);
+
+    const car = parseVehicle(
+      html,
+      TEST_URL
+    );
+
+    const activeReason =
+      detectActiveAuction(html);
+
+    console.log("");
+    console.log("VIN:", car.vin);
+    console.log("Auction source:", car.auction_source);
+    console.log("Lot number:", car.lot_number);
+    console.log("Auction date:", car.auction_date);
+    console.log("Detected price:", car.final_bid);
+    console.log(
+      "Active auction:",
+      activeReason ? "YES" : "NO"
+    );
+
+    if (activeReason) {
+      console.log(
+        "Matched active signal:",
+        activeReason
+      );
+
+      console.log("");
+      console.log(
+        "RESULT: WOULD SKIP - NO DATABASE WRITE"
+      );
+    } else {
+      console.log("");
+      console.log(
+        "RESULT: NO ACTIVE SIGNAL DETECTED"
+      );
+    }
+
+    console.log("========================================");
+
+    return;
+  }
 const runStartedAt = new Date();
 const RUN_SUMMARY_FILE = path.join(
   DATA_DIR,
@@ -1439,15 +1744,21 @@ function saveRunSummary(status) {
     status,
     startedAt: runStartedAt.toISOString(),
     finishedAt: new Date().toISOString(),
+    mode: MAKE_BACKFILL_MODE ? "make" : "recent",
+makeSlug: MAKE_BACKFILL_MODE ? MAKE_SLUG : null,
+startPage: START_PAGE,
+lastCatalogPage,
+stopReason,
     catalogPagesScanned: pagesScanned,
     vehiclePagesChecked,
     imported,
     duplicates,
     skippedPrice,
     skippedDate,
-    skippedInvalid,
-    skippedImages,
-    failed,
+   skippedInvalid,
+skippedImages,
+skippedActive,
+failed,
     completedUrlsTotal: completed.size,
   };
 
@@ -1493,6 +1804,9 @@ function saveRunSummary(status) {
     `Skipped no images: ${skippedImages}`
   );
   console.log(
+  `Skipped active auctions: ${skippedActive}`
+);
+  console.log(
     `Failed: ${failed}`
   );
   console.log(
@@ -1510,17 +1824,35 @@ function saveRunSummary(status) {
 
 }
 
-process.once("SIGINT", () => {
+function handleShutdown(signal) {
   console.log("");
   console.log(
-    "Ctrl+C received. Saving checkpoint and run summary..."
+    `${signal} received. Saving checkpoint and run summary...`
   );
 
-  saveRunSummary(
-    "interrupted"
-  );
+  try {
+    saveRunSummary("interrupted");
+  } catch (error) {
+    console.error(
+      `Failed to save shutdown summary: ${error.message}`
+    );
+  }
 
-  process.exit(130);
+  process.exit(
+    signal === "SIGINT" ? 130 : 1
+  );
+}
+
+process.once("SIGINT", () => {
+  handleShutdown("SIGINT");
+});
+
+process.once("SIGTERM", () => {
+  handleShutdown("SIGTERM");
+});
+
+process.once("SIGHUP", () => {
+  handleShutdown("SIGHUP");
 });
   console.log("");
   console.log(
@@ -1538,6 +1870,19 @@ process.once("SIGINT", () => {
   console.log(
     `Minimum date: ${MIN_AUCTION_DATE}`
   );
+console.log(
+  MAKE_BACKFILL_MODE
+    ? `Mode: DEEP MAKE BACKFILL (${MAKE_SLUG})`
+    : AUTO_MODE
+      ? "Mode: AUTO - RECENT FIRST"
+      : "Mode: NORMAL RECENT AUCTIONS"
+);
+
+if (MAKE_BACKFILL_MODE) {
+  console.log(
+    `Starting catalog page: ${START_PAGE}`
+  );
+}
   console.log(
   "Maximum catalog pages: AUTO"
 );
@@ -1554,7 +1899,8 @@ process.once("SIGINT", () => {
   try {
   const seenCatalogSignatures = new Set();
 
-  for (let page = 1; ; page++) {
+  for (let page = START_PAGE; ; page++) {
+    lastCatalogPage = page;
       const catalogUrl =
         getCatalogUrl(page);
 
@@ -1563,34 +1909,110 @@ process.once("SIGINT", () => {
         `========== CATALOG PAGE ${page} ==========`
       );
 
-      const catalogHtml =
-        await fetchPage(
-          catalogUrl
-        );
+      let catalogHtml = null;
+let catalogNotFound = false;
 
-      pagesScanned++;
-
-      const urls =
-        getVehicleUrls(
-          catalogHtml
-        );
-
-      console.log(
-        `Vehicle URLs found: ${urls.length}`
+for (let attempt = 1; attempt <= 4; attempt++) {
+  try {
+    catalogHtml =
+      await fetchPage(
+        catalogUrl
       );
 
-      if (urls.length === 0) {
-        console.log(
-          "No vehicle URLs found. Stopping."
-        );
+    break;
+  } catch (error) {
+    console.error(
+      `Catalog fetch failed on attempt ${attempt}/4: ${error.message}`
+    );
 
-        break;
-      }
+   if (attempt === 4) {
+  if (
+    String(error.message).includes(
+      "HTTP 404"
+    )
+  ) {
+    catalogNotFound = true;
+    break;
+  }
+
+  throw error;
+}
+
+    console.log(
+      "Waiting 15 seconds before retry..."
+    );
+
+    await sleep(15000);
+  }
+}
+if (catalogNotFound) {
+  stopReason = "empty_catalog";
+
+  console.log(
+    `Catalog page ${page} returned persistent 404 after retries. Treating as end of archive.`
+  );
+
+  break;
+}
+pagesScanned++;
+
+let urls =
+  getVehicleUrls(
+    catalogHtml
+  );
+
+console.log(
+  `Vehicle URLs found: ${urls.length}`
+);
+
+if (urls.length === 0) {
+  console.log(
+    `Catalog page ${page} returned 0 vehicles. Retrying before stopping...`
+  );
+
+  for (let retry = 1; retry <= 3; retry++) {
+    await sleep(10000);
+
+    console.log(
+      `Retry ${retry}/3 for catalog page ${page}`
+    );
+
+    catalogHtml =
+      await fetchPage(
+        catalogUrl
+      );
+
+    urls =
+      getVehicleUrls(
+        catalogHtml
+      );
+
+    console.log(
+      `Vehicle URLs found after retry ${retry}: ${urls.length}`
+    );
+
+    if (urls.length > 0) {
+      break;
+    }
+  }
+}
+
+if (urls.length === 0) {
+  stopReason = "empty_catalog";
+
+  console.log(
+    `Catalog page ${page} was empty after 3 retries. Stopping.`
+  );
+
+  break;
+}
       const catalogSignature = [...urls]
   .sort()
   .join("|");
 
 if (seenCatalogSignatures.has(catalogSignature)) {
+  stopReason = "repeated_catalog";
+
   console.log(
     `Catalog page ${page} repeated a previous page. Stopping.`
   );
@@ -1703,7 +2125,28 @@ await sleep(
   "https://opendatacar.com/en/auction/"
 );
 
-const html = await fetchPage(detailUrl);
+let html = null;
+
+for (let attempt = 1; attempt <= 3; attempt++) {
+  try {
+    html = await fetchPage(detailUrl);
+    break;
+  } catch (error) {
+    console.error(
+      `Detail fetch failed on attempt ${attempt}/3: ${error.message}`
+    );
+
+    if (attempt === 3) {
+      throw error;
+    }
+
+    console.log(
+      "Waiting 10 seconds before retry..."
+    );
+
+    await sleep(10000);
+  }
+}
 
           vehiclePagesChecked++;
 
@@ -1712,7 +2155,20 @@ const html = await fetchPage(detailUrl);
               html,
               url
             );
+const activeReason =
+  detectActiveAuction(html);
 
+if (activeReason) {
+  skippedActive++;
+
+  console.log(
+    `SKIP ACTIVE: ${car.vin || url} | matched ${activeReason}`
+  );
+
+  // Do NOT mark this URL completed.
+  // We want to revisit it after the auction actually sells.
+  continue;
+}
            // IAAI recovery mode:
 // revisit checkpointed URLs, but only continue processing
 // records that are actually from IAAI.
@@ -1861,8 +2317,9 @@ if (
 } else {
   consecutiveOldPages = 0;
 }
-
+savePageProgress(page + 1);
 if (consecutiveOldPages >= 3) {
+  stopReason = "old_date_cutoff";
   console.log("");
   console.log(
    `Reached 3 consecutive catalog pages containing only auctions older than ${MIN_AUCTION_DATE}.`
@@ -1876,11 +2333,13 @@ if (consecutiveOldPages >= 3) {
       await sleep(5000);
     }
   } catch (error) {
-    console.error("");
-    console.error(
-      `CRAWLER STOPPED: ${error.message}`
-    );
-  }
+  runFailed = true;
+
+  console.error("");
+  console.error(
+    `CRAWLER STOPPED: ${error.message}`
+  );
+}
 
   console.log("");
   console.log(
@@ -1924,7 +2383,9 @@ if (consecutiveOldPages >= 3) {
   console.log(
     `Skipped no images: ${skippedImages}`
   );
-
+console.log(
+  `Skipped active auctions: ${skippedActive}`
+);
   console.log(
     `Failed: ${failed}`
   );
@@ -1933,7 +2394,13 @@ if (consecutiveOldPages >= 3) {
   "========================================"
 );
 
-saveRunSummary("completed");
+saveRunSummary(
+  runFailed ? "failed" : "completed"
+);
+
+if (runFailed) {
+  process.exitCode = 1;
+}
 }
 
 main().catch((error) => {
