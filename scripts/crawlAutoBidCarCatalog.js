@@ -21,7 +21,7 @@ const supabase = createClient(
 
 const MODE = process.argv[2] || "fresh";
 
-const MIN_PRICE = 5000;
+const MIN_PRICE = 1000;
 
 let START_PAGE;
 let END_PAGE;
