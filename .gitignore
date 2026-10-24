@@ -43,3 +43,21 @@ next-env.d.ts
 /data/*.log
 /data/*checkpoint*.json
 /data/opendatacar-last-run.json
+
+# Local crawler state
+/data/opendatacar-auto-state.json
+/data/opendatacar-auto-state.json.backup
+/data/opendatacar-progress.json
+
+# Generated audit and model-recovery reports
+/data/autobidcar-unsold-audit.json
+/data/unknown-models-*.json
+/data/unknown-models-*.csv
+/indexability-audit.csv
+/sitemap-audit-results.csv
+
+# Temporary code comparisons
+/*-diff.txt
+
+# Local source backups
+*.backup
