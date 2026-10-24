@@ -65,16 +65,20 @@ export default async function RecentlyAddedPage({
   const from = (currentPage - 1) * PAGE_SIZE;
   const to = from + PAGE_SIZE - 1;
 
-  const { data: lots, error, count } = await supabase
-    .from("auction_lots")
-    .select(
-      "id, vin, auction_source, lot_number, created_at",
-      { count: "exact" }
-    )
-    .in("auction_source", ["COPART", "IAAI"])
-    .order("created_at", { ascending: false })
-    .order("id", { ascending: false })
-    .range(from, to);
+  const { data, error } = await supabase
+  .from("auction_lots")
+  .select("id, vin, auction_source, lot_number, created_at")
+  .in("auction_source", ["COPART", "IAAI"])
+  .order("created_at", { ascending: false })
+  .order("id", { ascending: false })
+  .range(from, to + 1);
+
+const hasNextPage =
+  data !== null &&
+  data.length > PAGE_SIZE &&
+  currentPage < MAX_ARCHIVE_PAGES;
+
+const lots = (data || []).slice(0, PAGE_SIZE);
 
   if (error) {
     console.error("Recently added archive error:", error);
@@ -87,18 +91,13 @@ export default async function RecentlyAddedPage({
     );
   }
 
-  const totalRecords = count || 0;
-  const totalPages = Math.max(
-    1,
-    Math.min(
-      MAX_ARCHIVE_PAGES,
-      Math.ceil(totalRecords / PAGE_SIZE)
-    )
-  );
+  if (lots.length === 0 && currentPage > 1) {
+  notFound();
+}
 
-  if (currentPage > totalPages) {
-    notFound();
-  }
+const totalPages = hasNextPage
+  ? Math.min(MAX_ARCHIVE_PAGES, currentPage + 1)
+  : currentPage;
 
   const vins = [...new Set((lots || []).map((lot) => lot.vin))];
 
@@ -124,20 +123,21 @@ export default async function RecentlyAddedPage({
       : `/recently-added?page=${number}`;
 
   const visiblePages = Array.from(
-    new Set([
-      1,
-      2,
-      currentPage - 2,
-      currentPage - 1,
-      currentPage,
-      currentPage + 1,
-      currentPage + 2,
-      totalPages - 1,
-      totalPages,
-    ])
+  new Set([
+    1,
+    currentPage - 2,
+    currentPage - 1,
+    currentPage,
+    ...(hasNextPage ? [currentPage + 1] : []),
+  ])
+)
+  .filter(
+    (number) =>
+      number >= 1 &&
+      number <= MAX_ARCHIVE_PAGES &&
+      number <= totalPages
   )
-    .filter((number) => number >= 1 && number <= totalPages)
-    .sort((a, b) => a - b);
+  .sort((a, b) => a - b);
 
   return (
     <main
