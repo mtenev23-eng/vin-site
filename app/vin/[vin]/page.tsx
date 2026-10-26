@@ -94,32 +94,13 @@ const getVehicleHistory = cache(async function getVehicleHistory(
 
 const getCachedSimilarLots = unstable_cache(
   async (make: string, model: string) => {
-    const { data, error } = await supabase
-      .from("vehicle_auction_archive")
-      .select(`
-        auction_id,
-        auction_source,
-        lot_number,
-        vin,
-        final_bid,
-        auction_date,
-        mileage,
-        primary_damage,
-        image_urls,
-        year,
-        make,
-        model,
-        trim
-      `)
-      .eq("make", make)
-      .eq("model", model)
-      .not("auction_date", "is", null)
-      .order("auction_date", {
-        ascending: false,
-        nullsFirst: false,
-      })
-      .limit(40);
-
+    const { data, error } = await supabase.rpc(
+  "get_similar_vin_auctions",
+  {
+    p_make: make,
+    p_model: model,
+  }
+);
     if (error) {
       console.error("Similar VIN lookup error:", error);
       throw new Error("Failed to load similar VINs");
@@ -127,7 +108,7 @@ const getCachedSimilarLots = unstable_cache(
 
     return data || [];
   },
-  ["vin-similar-lots-v1"],
+  ["vin-similar-lots-v2"],
   {
     revalidate: 86400,
     tags: ["vin-similar-lots"],
