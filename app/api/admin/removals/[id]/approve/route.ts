@@ -1,7 +1,7 @@
 ﻿
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import {
   ADMIN_COOKIE_NAME,
   verifyAdminSession,
@@ -225,6 +225,10 @@ export async function POST(
     revalidatePath("/recent-auctions");
     revalidatePath("/sitemap.xml");
 
+    // Immediately expire cached similar-auction recommendations.
+    revalidateTag("vin-similar-lots", { expire: 0 });
+    // Expire cached Recently Added vehicles after a removal.
+    revalidateTag("vin-recently-added", { expire: 0 });
     const { data: completed, error: completeError } = await supabase
       .from("removal_requests")
       .update({

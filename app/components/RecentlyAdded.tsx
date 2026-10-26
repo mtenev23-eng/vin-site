@@ -112,8 +112,11 @@ const getRecentlyAdded = unstable_cache(
       return b.id - a.id;
     });
   },
-  ["recently-added-auction-lots-v2"],
-  { revalidate: 300 }
+    ["recently-added-auction-lots-v2"],
+  {
+    revalidate: 300,
+    tags: ["vin-recently-added"],
+  }
 );
 
 

@@ -6,7 +6,7 @@ import { unstable_cache } from "next/cache";
 import { supabase } from "../../../../utils/supabase/client";
 import RemoveListingButton from "../../../components/RemoveListingButton";
 import AuctionPhotoGallery from "../../../components/AuctionPhotoGallery";
-export const revalidate = 86400;
+export const dynamic = "force-dynamic";
 
 type AuctionLot = {
 
@@ -198,8 +198,11 @@ const getCachedSimilarLots = unstable_cache(
 
     return data || [];
   },
-  ["similar-auction-lots-v1"],
-  { revalidate: 86400 }
+   ["similar-auction-lots-v1"],
+  {
+    revalidate: 86400,
+    tags: ["vin-similar-lots"],
+  }
 );
 
 async function getSimilarLots(

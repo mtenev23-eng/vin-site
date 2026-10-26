@@ -5,10 +5,8 @@ import { supabase } from "../../../utils/supabase/client";
 import VinPhotoGallery from "./VinPhotoGallery";
 import RemoveListingButton from "../../components/RemoveListingButton";
 import { slugifyModel } from "../../../utils/vehicle-models";
-export const revalidate = 86400;
-export async function generateStaticParams() {
-  return [];
-}
+import { unstable_cache } from "next/cache";
+export const dynamic = "force-dynamic";
 type Vehicle = {
   vin: string;
   year: number | null;
@@ -93,6 +91,49 @@ const getVehicleHistory = cache(async function getVehicleHistory(
   lots: lots || [],
 };
 });
+
+const getCachedSimilarLots = unstable_cache(
+  async (make: string, model: string) => {
+    const { data, error } = await supabase
+      .from("vehicle_auction_archive")
+      .select(`
+        auction_id,
+        auction_source,
+        lot_number,
+        vin,
+        final_bid,
+        auction_date,
+        mileage,
+        primary_damage,
+        image_urls,
+        year,
+        make,
+        model,
+        trim
+      `)
+      .eq("make", make)
+      .eq("model", model)
+      .not("auction_date", "is", null)
+      .order("auction_date", {
+        ascending: false,
+        nullsFirst: false,
+      })
+      .limit(40);
+
+    if (error) {
+      console.error("Similar VIN lookup error:", error);
+      throw new Error("Failed to load similar VINs");
+    }
+
+    return data || [];
+  },
+  ["vin-similar-lots-v1"],
+  {
+    revalidate: 86400,
+    tags: ["vin-similar-lots"],
+  }
+);
+
 async function getSimilarLots(
   make: string | null,
   model: string | null,
@@ -102,52 +143,54 @@ async function getSimilarLots(
     return [];
   }
 
-  const { data, error } = await supabase
-    .from("vehicle_auction_archive")
-    .select(`
-      auction_id,
-      auction_source,
-      lot_number,
-      vin,
-      final_bid,
-      auction_date,
-      mileage,
-      primary_damage,
-      image_urls,
-      year,
-      make,
-      model,
-      trim
-    `)
-    .eq("make", make)
-    .eq("model", model)
-    .neq("vin", currentVin)
-    .not("auction_date", "is", null)
-    .order("auction_date", {
-      ascending: false,
-      nullsFirst: false,
-    })
-    .limit(24);
+  try {
+    const data = await getCachedSimilarLots(make, model);
 
-  if (error) {
-    console.error("Similar VIN lookup error:", error);
+    const uniqueVins = new Map<string, (typeof data)[number]>();
+
+    for (const row of data) {
+      if (row.vin === currentVin) continue;
+
+      if (!uniqueVins.has(row.vin)) {
+        uniqueVins.set(row.vin, row);
+      }
+
+      if (uniqueVins.size === 8) {
+        break;
+      }
+    }
+
+    return Array.from(uniqueVins.values());
+  } catch (error) {
+    console.error("Cached similar VIN lookup error:", error);
     return [];
   }
-
-  const uniqueVins = new Map<string, (typeof data)[number]>();
-
-  for (const row of data || []) {
-    if (!uniqueVins.has(row.vin)) {
-      uniqueVins.set(row.vin, row);
-    }
-
-    if (uniqueVins.size === 8) {
-      break;
-    }
-  }
-
-  return Array.from(uniqueVins.values());
 }
+const getCachedModelAuctionCount = unstable_cache(
+  async (make: string, model: string) => {
+    const { count, error } = await supabase
+      .from("vehicle_auction_archive")
+      .select("auction_id", {
+        count: "exact",
+        head: true,
+      })
+      .eq("make", make)
+      .eq("model", model);
+
+    if (error) {
+      console.error("Model auction count lookup error:", error);
+      return 0;
+    }
+
+    return count || 0;
+  },
+  ["vin-model-auction-count-v1"],
+  {
+    revalidate: 86400,
+    tags: ["vin-model-auction-count"],
+  }
+);
+
 async function getModelAuctionCount(
   make: string | null,
   model: string | null
@@ -156,25 +199,12 @@ async function getModelAuctionCount(
     return 0;
   }
 
-  const { count, error } = await supabase
-    .from("vehicle_auction_archive")
-    .select("auction_id", {
-      count: "exact",
-      head: true,
-    })
-    .eq("make", make)
-    .eq("model", model);
-
-  if (error) {
-    console.error(
-      "Model auction count lookup error:",
-      error
-    );
-
+  try {
+    return await getCachedModelAuctionCount(make, model);
+  } catch (error) {
+    console.error("Cached model auction count error:", error);
     return 0;
   }
-
-  return count || 0;
 }
 function formatMileage(value: number | null) {
   if (value === null) {
@@ -295,29 +325,18 @@ type ComparableRow = {
   final_bid: number | null;
   year: number | null;
 };
-
-async function getComparableStats(
-  vehicle: Vehicle,
-  currentLotId: number
-): Promise<ComparableStats | null> {
-  if (!vehicle.make || !vehicle.model) {
-    return null;
-  }
-
-  async function fetchComparables(
-    minYear?: number,
-    maxYear?: number
-  ): Promise<ComparableRow[]> {
+const getCachedComparables = unstable_cache(
+  async (
+    make: string,
+    model: string,
+    minYear: number | null,
+    maxYear: number | null
+  ): Promise<ComparableRow[]> => {
     let query = supabase
       .from("vehicle_auction_archive")
-      .select(`
-        auction_id,
-        final_bid,
-        year
-      `)
-      .eq("make", vehicle.make)
-      .eq("model", vehicle.model)
-      .neq("auction_id", currentLotId)
+      .select("auction_id, final_bid, year")
+      .eq("make", make)
+      .eq("model", model)
       .not("final_bid", "is", null)
       .gte("final_bid", 1000)
       .order("auction_date", {
@@ -326,10 +345,7 @@ async function getComparableStats(
       })
       .limit(100);
 
-    if (
-      minYear !== undefined &&
-      maxYear !== undefined
-    ) {
+    if (minYear !== null && maxYear !== null) {
       query = query
         .gte("year", minYear)
         .lte("year", maxYear);
@@ -338,20 +354,42 @@ async function getComparableStats(
     const { data, error } = await query;
 
     if (error) {
-      console.error(
-        "Comparable auction lookup error:",
-        error
-      );
-
-      return [];
+      console.error("Comparable auction lookup error:", error);
+      throw new Error("Failed to load comparable auctions");
     }
 
-    return ((data || []) as ComparableRow[]).filter(
-      (row) =>
-        row.final_bid !== null &&
-        Number(row.final_bid) >= 1000
-    );
+    return (data || []) as ComparableRow[];
+  },
+  ["vin-comparable-auctions-v1"],
+  {
+    revalidate: 86400,
+    tags: ["vin-comparable-auctions"],
   }
+);
+async function getComparableStats(
+  vehicle: Vehicle,
+  currentLotId: number
+): Promise<ComparableStats | null> {
+  if (!vehicle.make || !vehicle.model) {
+    return null;
+  }
+
+ async function fetchComparables(
+  minYear?: number,
+  maxYear?: number
+): Promise<ComparableRow[]> {
+  try {
+    return await getCachedComparables(
+      vehicle.make!,
+      vehicle.model!,
+      minYear ?? null,
+      maxYear ?? null
+    );
+  } catch (error) {
+    console.error("Cached comparable auction error:", error);
+    return [];
+  }
+}
 
   let comparables: ComparableRow[] = [];
 
@@ -390,10 +428,13 @@ async function getComparableStats(
     comparables = await fetchComparables();
   }
 
-  if (comparables.length < 5) {
-    return null;
-  }
+  comparables = comparables.filter(
+  (row) => row.auction_id !== currentLotId
+);
 
+if (comparables.length < 5) {
+  return null;
+}
   const bids = comparables.map(
     (row) => Number(row.final_bid)
   );
