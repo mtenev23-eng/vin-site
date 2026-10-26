@@ -4,7 +4,7 @@ import {
 } from "../../utils/vehicle-models";
 
 import { supabase } from "../../utils/supabase/client";
-
+export const revalidate = 86400;
 const BASE_URL = "https://salvagevinhistory.com";
 const BATCH_SIZE = 1000;
 const MIN_MODEL_VEHICLES = 5;

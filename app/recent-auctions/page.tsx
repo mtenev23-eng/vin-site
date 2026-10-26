@@ -96,25 +96,21 @@ if (currentPage > MAX_ARCHIVE_PAGES) {
   const to = from + PAGE_SIZE - 1;
 
   const {
-    data: lots,
-    error,
-    count,
-  } = await supabase
-    .from("auction_lots")
-    .select(
-      `
-        id,
-        auction_source,
-        lot_number,
-        vin,
-        final_bid,
-        auction_date,
-        mileage,
-        primary_damage,
-        image_urls
-      `,
-      { count: "exact" }
-    )
+  data: lots,
+  error,
+} = await supabase
+  .from("auction_lots")
+  .select(`
+      id,
+      auction_source,
+      lot_number,
+      vin,
+      final_bid,
+      auction_date,
+      mileage,
+      primary_damage,
+      image_urls
+    `)
     .not("auction_date", "is", null)
     .order("auction_date", {
       ascending: false,
@@ -160,15 +156,9 @@ if (currentPage > MAX_ARCHIVE_PAGES) {
     ])
   );
 
-  const totalRecords = count || 0;
-  const totalPages = Math.max(
-  1,
-  Math.min(
-    MAX_ARCHIVE_PAGES,
-    Math.ceil(totalRecords / PAGE_SIZE)
-  )
-);
-if (currentPage > totalPages) {
+  const totalPages = MAX_ARCHIVE_PAGES;
+
+if (currentPage > 1 && (!lots || lots.length === 0)) {
   notFound();
 }
 

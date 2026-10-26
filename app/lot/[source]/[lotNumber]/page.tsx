@@ -226,6 +226,32 @@ async function getSimilarLots(
   }
 }
 
+const getCachedModelAuctionCount = unstable_cache(
+  async (make: string, model: string) => {
+    const { count, error } = await supabase
+      .from("vehicle_auction_archive")
+      .select("auction_id", {
+        count: "exact",
+        head: true,
+      })
+      .eq("make", make)
+      .eq("model", model);
+
+    if (error) {
+      throw new Error(
+        `Lot model auction count failed: ${error.message}`
+      );
+    }
+
+    return count ?? 0;
+  },
+  ["lot-model-auction-count"],
+  {
+    revalidate: 86400,
+    tags: ["lot-model-auction-count"],
+  }
+);
+
 async function getModelAuctionCount(
   make: string | null,
   model: string | null
@@ -234,25 +260,12 @@ async function getModelAuctionCount(
     return 0;
   }
 
-  const { count, error } = await supabase
-    .from("vehicle_auction_archive")
-    .select("auction_id", {
-      count: "exact",
-      head: true,
-    })
-    .eq("make", make)
-    .eq("model", model);
-
-  if (error) {
-    console.error(
-      "Model auction count lookup error:",
-      error
-    );
-
+  try {
+    return await getCachedModelAuctionCount(make, model);
+  } catch (error) {
+    console.error("Model auction count lookup error:", error);
     return 0;
   }
-
-  return count || 0;
 }
 async function getComparablePriceStats(
   make: string | null,

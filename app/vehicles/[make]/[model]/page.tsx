@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { cache } from "react";
-
+import { unstable_cache } from "next/cache";
 import { supabase } from "../../../../utils/supabase/client";
 import {
   displayModel,
@@ -256,7 +256,46 @@ function formatMileage(mileage: number | null) {
   return `${mileage.toLocaleString()} mi`;
 }
 
+const getCachedModelCounts = unstable_cache(
+  async (make: string, rawModels: string[]) => {
+    const { count: vehicleCount, error: vehicleError } =
+      await supabase
+        .from("vehicles")
+        .select("vin", { count: "exact", head: true })
+        .ilike("make", make)
+        .in("model", rawModels);
 
+    if (vehicleError) {
+      throw new Error(
+        `Model vehicle count failed: ${vehicleError.message}`
+      );
+    }
+
+    const { count: auctionCount, error: auctionError } =
+      await supabase
+        .from("vehicle_auction_archive")
+        .select("auction_id", { count: "exact", head: true })
+        .ilike("make", make)
+        .in("model", rawModels)
+        .not("auction_date", "is", null);
+
+    if (auctionError) {
+      throw new Error(
+        `Model auction count failed: ${auctionError.message}`
+      );
+    }
+
+    return {
+      vehicleCount: vehicleCount ?? 0,
+      auctionCount: auctionCount ?? 0,
+    };
+  },
+  ["model-archive-counts"],
+  {
+    revalidate: 86400,
+    tags: ["model-archive-counts"],
+  }
+);
 
 async function getModelData(
   make: string,
@@ -267,34 +306,13 @@ async function getModelData(
   const from = (page - 1) * PAGE_SIZE;
   const to = from + PAGE_SIZE - 1;
 
-  const {
-    data: vehicleRows,
-    error: vehicleError,
-    count: vehicleCount,
-  } = await supabase
-    .from("vehicles")
-    .select("vin", {
-      count: "exact",
-      head: true,
-    })
-    .ilike("make", make)
-    .in("model", rawModels);
+ const { vehicleCount, auctionCount } =
+  await getCachedModelCounts(make, rawModels);
 
-  if (vehicleError) {
-    console.error("Model vehicle error:", vehicleError);
-
-    return {
-      auctions: [] as AuctionWithVehicle[],
-      vehicleCount: 0,
-      auctionCount: 0,
-    };
-  }
-
-  const {
-    data,
-    error: lotError,
-    count: auctionCount,
-  } = await supabase
+ const {
+  data,
+  error: lotError,
+} = await supabase
     .from("vehicle_auction_archive")
     .select(
       `
@@ -312,9 +330,7 @@ async function getModelData(
         model,
         trim
       `,
-      {
-        count: "exact",
-      }
+      
     )
     .ilike("make", make)
     .in("model", rawModels)
