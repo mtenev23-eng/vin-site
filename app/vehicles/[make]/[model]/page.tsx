@@ -309,40 +309,17 @@ async function getModelData(
  const { vehicleCount, auctionCount } =
   await getCachedModelCounts(make, rawModels);
 
- const {
-  data,
-  error: lotError,
-} = await supabase
-    .from("vehicle_auction_archive")
-    .select(
-      `
-        auction_id,
-        auction_source,
-        lot_number,
-        vin,
-        final_bid,
-        auction_date,
-        mileage,
-        primary_damage,
-        image_urls,
-        year,
-        make,
-        model,
-        trim
-      `,
-      
-    )
-    .ilike("make", make)
-    .in("model", rawModels)
-    .not("auction_date", "is", null)
-    .order("auction_date", {
-      ascending: false,
-      nullsFirst: false,
-    })
-    .order("auction_id", {
-      ascending: false,
-    })
-    .range(from, to);
+
+const { data, error: lotError } = await supabase.rpc(
+  "get_model_auction_page" as any,
+  {
+    p_make: make,
+    p_models: rawModels,
+    p_limit: PAGE_SIZE,
+    p_offset: from,
+  } as any
+);
+
 
   if (lotError) {
     console.error("Model auction error:", lotError);
@@ -354,7 +331,23 @@ async function getModelData(
     };
   }
 
-  const auctions: AuctionWithVehicle[] = (data || []).map(
+  const auctions: AuctionWithVehicle[] = (
+  (data || []) as {
+    auction_id: number;
+    auction_source: string;
+    lot_number: string;
+    vin: string;
+    final_bid: number | null;
+    auction_date: string | null;
+    mileage: number | null;
+    primary_damage: string | null;
+    image_urls: string[] | null;
+    year: number | null;
+    make: string | null;
+    model: string | null;
+    trim: string | null;
+  }[]
+).map(
     (row) => ({
       id: row.auction_id,
       auction_source: row.auction_source,
