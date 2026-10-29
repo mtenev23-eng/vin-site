@@ -493,37 +493,22 @@ if (page > totalPages && auctionCount > 0) {
 
   const vehicleName = `${config.makeName} ${config.modelName}`;
 
-  const { data: recentBidRows } = await supabase
-  .from("vehicle_auction_archive")
-  .select("final_bid")
-  .ilike("make", config.make)
-  .in("model", config.rawModels)
-  .not("final_bid", "is", null)
-  .not("auction_date", "is", null)
-  .order("auction_date", {
-    ascending: false,
-    nullsFirst: false,
-  })
-  .order("auction_id", {
-    ascending: false,
-  })
-  .limit(24);
-
-const recentBids = (recentBidRows || [])
-  .map((row) => row.final_bid)
-  .filter(
-    (bid): bid is number =>
-      typeof bid === "number"
+  const { data: averageBidData, error: averageBidError } =
+  await supabase.rpc(
+    "get_model_recent_average_bid" as any,
+    {
+      p_make: config.make,
+      p_models: config.rawModels,
+    } as any
   );
 
+if (averageBidError) {
+  console.error("Model average bid error:", averageBidError);
+}
+
 const averageBid =
-  recentBids.length > 0
-    ? Math.round(
-        recentBids.reduce(
-          (total, bid) => total + bid,
-          0
-        ) / recentBids.length
-      )
+  !averageBidError && averageBidData !== null
+    ? Number(averageBidData)
     : null;
 
   return (
