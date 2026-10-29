@@ -300,152 +300,70 @@ type ComparableStats = {
   maxYear: number | null;
 };
 
-type ComparableRow = {
-  auction_id: number;
-  final_bid: number | null;
-  year: number | null;
-};
-const getCachedComparables = unstable_cache(
+
+const getCachedComparableStats = unstable_cache(
   async (
-    make: string,
-    model: string,
-    minYear: number | null,
-    maxYear: number | null
-  ): Promise<ComparableRow[]> => {
-    let query = supabase
-      .from("vehicle_auction_archive")
-      .select("auction_id, final_bid, year")
-      .eq("make", make)
-      .eq("model", model)
-      .not("final_bid", "is", null)
-      .gte("final_bid", 1000)
-      .order("auction_date", {
-        ascending: false,
-        nullsFirst: false,
-      })
-      .limit(100);
-
-    if (minYear !== null && maxYear !== null) {
-      query = query
-        .gte("year", minYear)
-        .lte("year", maxYear);
-    }
-
-    const { data, error } = await query;
+    vin: string,
+    currentLotId: number
+  ): Promise<ComparableStats | null> => {
+    const { data, error } = await supabase.rpc(
+      "get_vin_comparable_stats_v2",
+      {
+        p_vin: vin,
+        p_exclude_auction_id: currentLotId,
+      }
+    );
 
     if (error) {
-      console.error("Comparable auction lookup error:", error);
-      throw new Error("Failed to load comparable auctions");
+      console.error("Comparable stats RPC error:", error);
+      throw new Error("Failed to load comparable stats");
     }
 
-    return (data || []) as ComparableRow[];
+    const row = data?.[0];
+
+    if (!row || Number(row.comparable_count) < 5) {
+      return null;
+    }
+
+    const average = Number(row.average_bid);
+    const count = Number(row.comparable_count);
+
+    if (!Number.isFinite(average) ||
+        !Number.isFinite(count)) {
+      return null;
+    }
+
+    return {
+      average,
+      count,
+      minYear: row.min_year ?? null,
+      maxYear: row.max_year ?? null,
+    };
   },
-  ["vin-comparable-auctions-v1"],
+  ["vin-comparable-stats-v2"],
   {
     revalidate: 86400,
     tags: ["vin-comparable-auctions"],
   }
 );
+
 async function getComparableStats(
   vehicle: Vehicle,
   currentLotId: number
 ): Promise<ComparableStats | null> {
-  if (!vehicle.make || !vehicle.model) {
-    return null;
-  }
+  if (!vehicle.vin) return null;
 
- async function fetchComparables(
-  minYear?: number,
-  maxYear?: number
-): Promise<ComparableRow[]> {
   try {
-    return await getCachedComparables(
-      vehicle.make!,
-      vehicle.model!,
-      minYear ?? null,
-      maxYear ?? null
+    return await getCachedComparableStats(
+      vehicle.vin.trim().toUpperCase(),
+      currentLotId
     );
   } catch (error) {
-    console.error("Cached comparable auction error:", error);
-    return [];
+    console.error("Cached comparable stats error:", error);
+    return null;
   }
 }
 
-  let comparables: ComparableRow[] = [];
-
-  /*
-    First preference:
-    same make + model + exact model year.
-  */
-  if (vehicle.year !== null) {
-    comparables = await fetchComparables(
-      vehicle.year,
-      vehicle.year
-    );
-  }
-
-  /*
-    If we don't have enough exact-year sales,
-    expand to +/- 2 model years.
-  */
-  if (
-    comparables.length < 5 &&
-    vehicle.year !== null
-  ) {
-    comparables = await fetchComparables(
-      vehicle.year - 2,
-      vehicle.year + 2
-    );
-  }
-
-  /*
-    If year is unavailable, use make + model.
-  */
-  if (
-    comparables.length < 5 &&
-    vehicle.year === null
-  ) {
-    comparables = await fetchComparables();
-  }
-
-  comparables = comparables.filter(
-  (row) => row.auction_id !== currentLotId
-);
-
-if (comparables.length < 5) {
-  return null;
-}
-  const bids = comparables.map(
-    (row) => Number(row.final_bid)
-  );
-
-  const average = Math.round(
-    bids.reduce(
-      (total, bid) => total + bid,
-      0
-    ) / bids.length
-  );
-
-  const years = comparables
-    .map((row) => row.year)
-    .filter(
-      (year): year is number =>
-        typeof year === "number"
-    );
-
-  return {
-    average,
-    count: comparables.length,
-    minYear:
-      years.length > 0
-        ? Math.min(...years)
-        : null,
-    maxYear:
-      years.length > 0
-        ? Math.max(...years)
-        : null,
-  };
-}
 export async function generateMetadata({
   params,
 }: {
