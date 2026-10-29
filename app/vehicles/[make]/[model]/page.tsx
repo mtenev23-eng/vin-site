@@ -271,13 +271,14 @@ const getCachedModelCounts = unstable_cache(
       );
     }
 
-    const { count: auctionCount, error: auctionError } =
-      await supabase
-        .from("vehicle_auction_archive")
-        .select("auction_id", { count: "exact", head: true })
-        .ilike("make", make)
-        .in("model", rawModels)
-        .not("auction_date", "is", null);
+   const { data: auctionCount, error: auctionError } =
+  await supabase.rpc(
+    "get_model_auction_count" as any,
+    {
+      p_make: make,
+      p_models: rawModels,
+    } as any
+  );
 
     if (auctionError) {
       throw new Error(
