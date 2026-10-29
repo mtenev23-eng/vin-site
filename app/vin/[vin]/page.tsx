@@ -92,15 +92,16 @@ const getVehicleHistory = cache(async function getVehicleHistory(
 };
 });
 
+
 const getCachedSimilarLots = unstable_cache(
-  async (make: string, model: string) => {
+  async (vin: string) => {
     const { data, error } = await supabase.rpc(
-  "get_similar_vin_auctions",
-  {
-    p_make: make,
-    p_model: model,
-  }
-);
+      "test_similar_vin_auctions_v3",
+      {
+        p_vin: vin,
+      }
+    );
+
     if (error) {
       console.error("Similar VIN lookup error:", error);
       throw new Error("Failed to load similar VINs");
@@ -108,26 +109,25 @@ const getCachedSimilarLots = unstable_cache(
 
     return data || [];
   },
-  ["vin-similar-lots-v2"],
+  ["vin-similar-lots-v3-full"],
   {
     revalidate: 86400,
     tags: ["vin-similar-lots"],
   }
 );
 
-async function getSimilarLots(
-  make: string | null,
-  model: string | null,
-  currentVin: string
-) {
-  if (!make || !model) {
-    return [];
-  }
+async function getSimilarLots(currentVin: string) {
+  if (!currentVin) return [];
 
   try {
-    const data = await getCachedSimilarLots(make, model);
+    const data = await getCachedSimilarLots(
+      currentVin.trim().toUpperCase()
+    );
 
-    const uniqueVins = new Map<string, (typeof data)[number]>();
+    const uniqueVins = new Map<
+      string,
+      (typeof data)[number]
+    >();
 
     for (const row of data) {
       if (row.vin === currentVin) continue;
@@ -136,9 +136,7 @@ async function getSimilarLots(
         uniqueVins.set(row.vin, row);
       }
 
-      if (uniqueVins.size === 8) {
-        break;
-      }
+      if (uniqueVins.size === 8) break;
     }
 
     return Array.from(uniqueVins.values());
@@ -147,6 +145,7 @@ async function getSimilarLots(
     return [];
   }
 }
+
 const getCachedModelAuctionCount = unstable_cache(
   async (make: string, model: string) => {
     const { count, error } = await supabase
@@ -187,20 +186,20 @@ async function getModelAuctionCount(
     return 0;
   }
 }
-function formatMileage(value: number | null) {
-  if (value === null) {
-    return "Not available";
-  }
-
-  return `${value.toLocaleString()} miles`;
-}
-
-function formatBid(value: number | null) {
-  if (value === null) {
+function formatBid(value: number | null | undefined) {
+  if (value == null || !Number.isFinite(value)) {
     return "Not available";
   }
 
   return `$${value.toLocaleString()}`;
+}
+
+function formatMileage(value: number | null | undefined) {
+  if (value == null || !Number.isFinite(value)) {
+    return "Not available";
+  }
+
+  return `${value.toLocaleString()} miles`;
 }
 
 function formatDate(value: string | null) {
@@ -565,11 +564,7 @@ const makeSlug = vehicle.make
       .replace(/^-+|-+$/g, "")
   : null;
 
-  const similarLots = await getSimilarLots(
-  vehicle.make,
-  vehicle.model,
-  vehicle.vin
-);
+  const similarLots = await getSimilarLots(vehicle.vin);
 const modelAuctionCount =
   await getModelAuctionCount(
     vehicle.make,
