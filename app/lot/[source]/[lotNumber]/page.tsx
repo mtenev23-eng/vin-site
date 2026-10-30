@@ -164,64 +164,43 @@ return {
 });
 
 const getCachedSimilarLots = unstable_cache(
-  async (make: string, model: string) => {
-    const { data, error } = await supabase
-      .from("vehicle_auction_archive")
-      .select(`
-        auction_id,
-        auction_source,
-        lot_number,
-        vin,
-        final_bid,
-        auction_date,
-        mileage,
-        primary_damage,
-        image_urls,
-        year,
-        make,
-        model,
-        trim
-      `)
-      .eq("make", make)
-      .eq("model", model)
-      .not("auction_date", "is", null)
-      .order("auction_date", {
-        ascending: false,
-        nullsFirst: false,
-      })
-      .limit(9);
+  async (vin: string) => {
+    const { data, error } = await supabase.rpc(
+      "test_similar_vin_auctions_v3",
+      { p_vin: vin }
+    );
 
     if (error) {
-      console.error("Similar auction lookup error:", error);
-      throw new Error("Failed to load similar auctions");
+      console.error("Similar VIN lookup error:", error);
+      throw new Error("Failed to load similar VINs");
     }
 
     return data || [];
   },
-   ["similar-auction-lots-v1"],
+  ["lot-similar-lots-v3-full"],
   {
     revalidate: 86400,
     tags: ["vin-similar-lots"],
   }
 );
 
-async function getSimilarLots(
-  make: string | null,
-  model: string | null,
-  currentLotId: number
-) {
-  if (!make || !model) {
-    return [];
-  }
+async function getSimilarLots(currentVin: string) {
+  if (!currentVin) return [];
 
   try {
-    const lots = await getCachedSimilarLots(make, model);
+    const cleanedVin = currentVin.trim().toUpperCase();
+    const data = await getCachedSimilarLots(cleanedVin);
+    const uniqueVins = new Map<string, (typeof data)[number]>();
 
-    return lots
-      .filter((lot) => lot.auction_id !== currentLotId)
-      .slice(0, 8);
+    for (const row of data) {
+      if (row.vin?.toUpperCase() === cleanedVin) continue;
+      if (!uniqueVins.has(row.vin)) uniqueVins.set(row.vin, row);
+      if (uniqueVins.size === 8) break;
+    }
+
+    return Array.from(uniqueVins.values());
   } catch (error) {
-    console.error("Cached similar auctions error:", error);
+    console.error("Cached similar VIN lookup error:", error);
     return [];
   }
 }
@@ -618,11 +597,7 @@ export default async function LotPage({
 
   const { lot, vehicle } = record;
 
-const similarLots = await getSimilarLots(
-  vehicle?.make || null,
-  vehicle?.model || null,
-  lot.id
-);
+const similarLots = await getSimilarLots(lot.vin);
 
 const modelAuctionCount =
   await getModelAuctionCount(
