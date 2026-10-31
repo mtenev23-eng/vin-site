@@ -255,6 +255,27 @@ function formatMileage(mileage: number | null) {
 
   return `${mileage.toLocaleString()} mi`;
 }
+
+async function getPrecomputedModelAverageBid(
+  makeSlug: string,
+  modelSlug: string
+): Promise<number | null> {
+  const { data, error } = await supabase
+    .from("model_average_bid_cache")
+    .select("average_bid")
+    .eq("make_slug", makeSlug.toLowerCase())
+    .eq("model_slug", modelSlug.toLowerCase())
+    .maybeSingle();
+
+  if (error) {
+    console.error("Precomputed model average bid error:", error);
+    throw new Error("Failed to fetch precomputed model average bid");
+  }
+
+  return data?.average_bid != null
+    ? Number(data.average_bid)
+    : null;
+}
 const getCachedModelAverageBid = unstable_cache(
   async (make: string, rawModels: string[]): Promise<number | null> => {
     const { data, error } = await supabase.rpc(
@@ -514,14 +535,30 @@ if (page > totalPages && auctionCount > 0) {
 }
 
   const vehicleName = `${config.makeName} ${config.modelName}`;
+if (
+  (makeSlug.toLowerCase() === "bmw" &&
+    modelSlug.toLowerCase() === "3-series") ||
+  (makeSlug.toLowerCase() === "tesla" &&
+    modelSlug.toLowerCase() === "model-y")
+) {
+  const cachedAverage = await getPrecomputedModelAverageBid(
+    makeSlug,
+    modelSlug
+  );
 
+  console.log("PRECOMPUTED AVERAGE TEST:", {
+    makeSlug,
+    modelSlug,
+    cachedAverage,
+  });
+}
   let averageBid: number | null = null;
 
 try {
-  averageBid = await getCachedModelAverageBid(
-    config.make,
-    config.rawModels
-  );
+  averageBid = await getPrecomputedModelAverageBid(
+  makeSlug,
+  modelSlug
+);
 } catch (error) {
   console.error("Model average bid unavailable:", error);
 }
