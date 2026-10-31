@@ -255,7 +255,29 @@ function formatMileage(mileage: number | null) {
 
   return `${mileage.toLocaleString()} mi`;
 }
+const getCachedModelAverageBid = unstable_cache(
+  async (make: string, rawModels: string[]): Promise<number | null> => {
+    const { data, error } = await supabase.rpc(
+      "get_model_recent_average_bid" as any,
+      {
+        p_make: make,
+        p_models: rawModels,
+      } as any
+    );
 
+    if (error) {
+      console.error("Model average bid error:", error);
+      throw new Error("Failed to fetch model average bid");
+    }
+
+    return data !== null ? Number(data) : null;
+  },
+  ["model-recent-average-bid"],
+  {
+    revalidate: 86400,
+    tags: ["model-recent-average-bid"],
+  }
+);
 const getCachedModelCounts = unstable_cache(
   async (make: string, rawModels: string[]) => {
     const { count: vehicleCount, error: vehicleError } =
@@ -493,24 +515,16 @@ if (page > totalPages && auctionCount > 0) {
 
   const vehicleName = `${config.makeName} ${config.modelName}`;
 
-  const { data: averageBidData, error: averageBidError } =
-  await supabase.rpc(
-    "get_model_recent_average_bid" as any,
-    {
-      p_make: config.make,
-      p_models: config.rawModels,
-    } as any
+  let averageBid: number | null = null;
+
+try {
+  averageBid = await getCachedModelAverageBid(
+    config.make,
+    config.rawModels
   );
-
-if (averageBidError) {
-  console.error("Model average bid error:", averageBidError);
+} catch (error) {
+  console.error("Model average bid unavailable:", error);
 }
-
-const averageBid =
-  !averageBidError && averageBidData !== null
-    ? Number(averageBidData)
-    : null;
-
   return (
     <main
       style={{
