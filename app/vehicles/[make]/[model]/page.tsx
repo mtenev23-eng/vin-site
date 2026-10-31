@@ -276,29 +276,8 @@ async function getPrecomputedModelAverageBid(
     ? Number(data.average_bid)
     : null;
 }
-const getCachedModelAverageBid = unstable_cache(
-  async (make: string, rawModels: string[]): Promise<number | null> => {
-    const { data, error } = await supabase.rpc(
-      "get_model_recent_average_bid" as any,
-      {
-        p_make: make,
-        p_models: rawModels,
-      } as any
-    );
 
-    if (error) {
-      console.error("Model average bid error:", error);
-      throw new Error("Failed to fetch model average bid");
-    }
-
-    return data !== null ? Number(data) : null;
-  },
-  ["model-recent-average-bid"],
-  {
-    revalidate: 86400,
-    tags: ["model-recent-average-bid"],
-  }
-);
+;
 const getCachedModelCounts = unstable_cache(
   async (make: string, rawModels: string[]) => {
     const { count: vehicleCount, error: vehicleError } =
