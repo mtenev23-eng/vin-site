@@ -800,7 +800,7 @@ const historySummary =
               fontSize: "14px",
             }}
           >
-            â† Search another vehicle
+           <span aria-hidden="true">&larr;</span> Search another vehicle
           </Link>
         </div>
       </header>
@@ -1378,7 +1378,7 @@ const historySummary =
           fontWeight: "700",
         }}
       >
-        View full auction record â†’
+   View full auction record <span aria-hidden="true">&rarr;</span>
       </Link>
     </div>
   </section>
@@ -1620,7 +1620,7 @@ const historySummary =
                 whiteSpace: "nowrap",
               }}
             >
-              View record â†’
+             View record <span aria-hidden="true">&rarr;</span>
             </Link>
           </div>
         );
@@ -2341,8 +2341,8 @@ const historySummary =
                 >
                   {similarLot.auction_source}
                   {similarLot.auction_date
-                    ? ` â€¢ ${formatDate(similarLot.auction_date)}`
-                    : ""}
+  ? ` \u2022 ${formatDate(similarLot.auction_date)}`
+  : ""}
                 </div>
 
                 <h3
@@ -2437,9 +2437,10 @@ const historySummary =
         padding: "10px 0",
       }}
     >
-      {vehicle.model && modelAuctionCount >= 5
-        ? `View all ${vehicle.make} ${displayModel(vehicle.model)} auctions â†’`
-        : `View all ${vehicle.make} auctions â†’`}
+     {vehicle.model && modelAuctionCount >= 5
+  ? `View all ${vehicle.make} ${displayModel(vehicle.model)} auctions`
+  : `View all ${vehicle.make} auctions`}
+{" "}<span aria-hidden="true">&rarr;</span>
     </Link>
   </div>
 )}
