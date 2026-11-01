@@ -2296,13 +2296,14 @@ const historySummary =
             }}
           >
             <Link
-              href={similarVinUrl}
-              style={{
-                display: "block",
-                color: "inherit",
-                textDecoration: "none",
-              }}
-            >
+  href={similarVinUrl}
+  prefetch={false}
+  style={{
+    display: "block",
+    color: "inherit",
+    textDecoration: "none",
+  }}
+>
               <div
                 style={{
                   height: "170px",
