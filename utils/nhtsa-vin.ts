@@ -32,7 +32,7 @@ const decodeVinCached = unstable_cache(
     try {
       const response = await fetch(
         `https://vpic.nhtsa.dot.gov/api/vehicles/DecodeVinValues/${encodeURIComponent(vin)}?format=json`,
-        { signal: AbortSignal.timeout(5000) }
+        { signal: AbortSignal.timeout(2500) }
       );
 
       if (!response.ok) return [];
@@ -70,7 +70,10 @@ const decodeVinCached = unstable_cache(
 
       return specifications;
     } catch (error) {
-      console.error("NHTSA VIN decode error:", error);
+      console.warn("NHTSA VIN decode unavailable:", {
+  vin,
+  reason: error instanceof Error ? error.message : String(error),
+});
       return [];
     }
   },
