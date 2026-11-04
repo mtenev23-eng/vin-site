@@ -1120,10 +1120,12 @@ const vehicleOverview = [
 
 <div
   style={{
-    marginTop: "auto",
-    marginBottom: "16px",
-    paddingTop: "22px",
-    borderTop: "1px solid #e8e8e8",
+    marginTop: "24px",
+marginBottom: "16px",
+padding: "20px",
+background: "#f8f9fa",
+border: "1px solid #e5e7eb",
+borderRadius: "10px",
   }}
 >
   <div
@@ -1134,7 +1136,7 @@ const vehicleOverview = [
       marginBottom: "5px",
     }}
   >
-    Want this auction record removed?
+    Remove this vehicle's auction history
   </div>
 
   <div
@@ -1145,7 +1147,7 @@ const vehicleOverview = [
       marginBottom: "13px",
     }}
   >
-    Request removal of this listing and its archived photos.
+    Request removal of this vehicle's archived auction records and photos.
   </div>
 
   <RemoveListingButton

@@ -38,6 +38,7 @@ Lot: ${lotNumber}`;
         type="button"
         onClick={() => setIsOpen(true)}
         style={{
+          width: "100%",
           background: "#c81e1e",
           color: "#ffffff",
           border: "none",
