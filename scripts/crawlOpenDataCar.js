@@ -1271,9 +1271,19 @@ function parseVehicle(html, url) {
         "Auction Repair Estimate (ERC)"
       ),
 
-    image_urls:
-      extractImageUrls(html),
+   image_urls: extractImageUrls(html).filter((imageUrl) => {
+  const source = extractAuctionSource(description);
 
+  if (source === "COPART") {
+    return imageUrl.includes("cs.copart.com");
+  }
+
+  if (source === "IAAI") {
+    return imageUrl.includes("vis.iaai.com/deepzoom");
+  }
+
+  return false;
+}),
     source_url:
       url,
   };
@@ -1366,8 +1376,9 @@ async function saveToSupabase(car) {
     body_style: car.body_style,
     acv: car.acv,
     estimated_repair_cost: car.estimated_repair_cost,
-    image_urls: car.image_urls,
-    source_url: car.source_url,
+    // Preserve existing auction photos during routine updates.
+// Gallery corrections should use a separate verified process.
+source_url: car.source_url,
   };
 
   // Never replace an existing value with null/undefined.

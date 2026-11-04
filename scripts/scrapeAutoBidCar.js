@@ -367,7 +367,9 @@ if (isTooRecentAuctionDate(auctionDate)) {
 
   console.log("Finding vehicle images...");
 
-  const imageUrls = await getVehicleImages(vin);
+ // Autobidcar images are indexed by VIN, not auction lot.
+// Do not treat them as verified lot-specific photographs.
+const imageUrls = [];
 
   /*
     STEP 6:
