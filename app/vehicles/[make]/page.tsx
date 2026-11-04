@@ -1149,18 +1149,31 @@ const paginationPages = getPaginationPages(
                         </div>
                       )}
 
-                      <Link
-                        href={`/vin/${vehicle.vin}`}
-                        prefetch={false}
-                        style={{
-                          color: "#171717",
-                          fontSize: "13px",
-                          fontWeight: "bold",
-                          overflowWrap: "anywhere",
-                        }}
-                      >
-                        VIN: {vehicle.vin}
-                      </Link>
+                      {lotUrl ? (
+                        <Link
+                          href={lotUrl}
+                          prefetch={false}
+                          style={{
+                            color: "#171717",
+                            fontSize: "13px",
+                            fontWeight: "bold",
+                            overflowWrap: "anywhere",
+                          }}
+                        >
+                          VIN: {vehicle.vin}
+                        </Link>
+                      ) : (
+                        <span
+                          style={{
+                            color: "#171717",
+                            fontSize: "13px",
+                            fontWeight: "bold",
+                            overflowWrap: "anywhere",
+                          }}
+                        >
+                          VIN: {vehicle.vin}
+                        </span>
+                      )}
                     </div>
                   </article>
                 );
@@ -1322,9 +1335,8 @@ const paginationPages = getPaginationPages(
               margin: 0,
             }}
           >
-            Filter the archive by model or open an individual VIN history page
-            to review the auction appearances currently available for a
-            specific vehicle.
+            Filter the archive by model or open an individual auction lot
+            page to review the available historical record for a vehicle.
           </p>
         </section>
       </div>

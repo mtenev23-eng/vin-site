@@ -239,7 +239,7 @@ const totalPages = hasNextPage
                 </h2>
 
                 <Link
-                  href={`/vin/${lot.vin}`}
+                  href={lotUrl}
                   prefetch={false}
                   style={{
                     color: "#555",

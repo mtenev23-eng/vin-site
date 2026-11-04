@@ -454,6 +454,9 @@ const buildPageUrl = (page: number) => {
 >
           {archiveItems.map(({ vehicle, lots }) => {
             const latestLot = lots[0] || null;
+            const lotUrl = latestLot
+              ? `/lot/${latestLot.auction_source.toLowerCase()}/${latestLot.lot_number}`
+              : null;
 
             const vehicleName = [
               vehicle.year,
@@ -479,9 +482,9 @@ const buildPageUrl = (page: number) => {
                   background: "#ffffff",
                 }}
               >
-                {firstImage && (
+                {firstImage && lotUrl && (
                   <Link
-                    href={`/vin/${vehicle.vin}`}
+                    href={lotUrl!}
                     prefetch={false}
                     style={{
                       display: "block",
@@ -529,16 +532,20 @@ const buildPageUrl = (page: number) => {
                       margin: "0 0 7px",
                     }}
                   >
-                    <Link
-                      href={`/vin/${vehicle.vin}`}
-                      prefetch={false}
-                      style={{
-                        color: "#171717",
-                        textDecoration: "none",
-                      }}
-                    >
-                      {vehicleName || "Archived Vehicle"}
-                    </Link>
+                    {lotUrl ? (
+                      <Link
+                        href={lotUrl}
+                        prefetch={false}
+                        style={{
+                          color: "#171717",
+                          textDecoration: "none",
+                        }}
+                      >
+                        {vehicleName || "Archived Vehicle"}
+                      </Link>
+                    ) : (
+                      vehicleName || "Archived Vehicle"
+                    )}
                   </h2>
 
                   {vehicle.trim && (
@@ -626,8 +633,8 @@ const buildPageUrl = (page: number) => {
                     </div>
                   )}
 
-                  <Link
-                    href={`/vin/${vehicle.vin}`}
+                  {lotUrl && <Link
+                    href={lotUrl}
                     prefetch={false}
                     style={{
                       display: "inline-block",
@@ -640,8 +647,8 @@ const buildPageUrl = (page: number) => {
                       borderRadius: "6px",
                     }}
                   >
-                    View VIN History →
-                  </Link>
+                    View Auction Lot →
+                  </Link>}
                 </div>
               </article>
             );

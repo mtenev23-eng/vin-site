@@ -324,19 +324,14 @@ export async function GET() {
     });
   }
 
+  // Do not publish inferred lastmod values: vehicle import timestamps are not
+  // reliable evidence of a meaningful change to a make/model page.
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${urls
-  .map(
-    (item) => `  <url>
-    <loc>${item.url}</loc>${
-      item.lastModified
-        ? `
-    <lastmod>${item.lastModified.toISOString()}</lastmod>`
-        : ""
-    }
-  </url>`
-  )
+  .map((item) => `  <url>
+    <loc>${item.url}</loc>
+  </url>`)
   .join("\n")}
 </urlset>`;
 

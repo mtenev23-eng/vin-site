@@ -971,7 +971,7 @@ try {
                     </div>
 
                     <Link
-                      href={`/vin/${lot.vin}`}
+                      href={lotUrl}
                       prefetch={false}
                       style={{
                         color: "#171717",

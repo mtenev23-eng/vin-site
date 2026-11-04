@@ -703,7 +703,7 @@ records by VIN, lot number, make or model.
   <div>
   VIN:{" "}
   <Link
-    href={`/vin/${lot.vin}`}
+    href={lotUrl}
     onClick={(e) => {
       e.stopPropagation();
     }}

@@ -1,4 +1,3 @@
-
 import Link from "next/link";
 import { unstable_cache } from "next/cache";
 import { supabase } from "../../utils/supabase/client";
@@ -18,14 +17,11 @@ type Vehicle = {
   model: string | null;
 };
 
-
 const getRecentlyAdded = unstable_cache(
   async () => {
     const { data: lots, error } = await supabase
       .from("auction_lots")
-      .select(
-        "id, vin, auction_source, lot_number, created_at"
-      )
+      .select("id, vin, auction_source, lot_number, created_at")
       .order("created_at", { ascending: false })
       .order("id", { ascending: false })
       .limit(120);
@@ -36,32 +32,21 @@ const getRecentlyAdded = unstable_cache(
     }
 
     const recentLots = (lots || []) as RecentLot[];
-
-    const vins = [
-      ...new Set(recentLots.map((lot) => lot.vin)),
-    ];
-
+    const vins = [...new Set(recentLots.map((lot) => lot.vin))];
     if (vins.length === 0) return [];
 
-    const { data: vehicles, error: vehicleError } =
-      await supabase
-        .from("vehicles")
-        .select("vin, year, make, model")
-        .in("vin", vins);
+    const { data: vehicles, error: vehicleError } = await supabase
+      .from("vehicles")
+      .select("vin, year, make, model")
+      .in("vin", vins);
 
     if (vehicleError) {
-      console.error(
-        "Recently added vehicles error:",
-        vehicleError
-      );
+      console.error("Recently added vehicles error:", vehicleError);
       return [];
     }
 
     const vehicleMap = new Map(
-      ((vehicles || []) as Vehicle[]).map((vehicle) => [
-        vehicle.vin,
-        vehicle,
-      ])
+      ((vehicles || []) as Vehicle[]).map((vehicle) => [vehicle.vin, vehicle])
     );
 
     const candidates = recentLots.map((lot) => ({
@@ -73,56 +58,41 @@ const getRecentlyAdded = unstable_cache(
     const usedMakes = new Set<string>();
     const usedVins = new Set<string>();
 
-    // First pass: select the newest vehicle
-    // from each different manufacturer.
+    // First pass: select the newest vehicle from each different manufacturer.
     for (const lot of candidates) {
       if (selected.length >= 8) break;
-
-      const make = lot.vehicle?.make
-        ?.trim()
-        .toLowerCase();
-
+      const make = lot.vehicle?.make?.trim().toLowerCase();
       if (!make || usedMakes.has(make)) continue;
       if (usedVins.has(lot.vin)) continue;
-
       selected.push(lot);
       usedMakes.add(make);
       usedVins.add(lot.vin);
     }
 
-    // Second pass: fill remaining positions
-    // if fewer than six manufacturers were found.
+    // Second pass: fill remaining positions if fewer than eight were found.
     for (const lot of candidates) {
       if (selected.length >= 8) break;
       if (usedVins.has(lot.vin)) continue;
-
       selected.push(lot);
       usedVins.add(lot.vin);
     }
 
-    // Display selected vehicles newest first.
     return selected.sort((a, b) => {
       const dateA = a.created_at || "";
       const dateB = b.created_at || "";
-
-      if (dateA !== dateB) {
-        return dateB.localeCompare(dateA);
-      }
-
+      if (dateA !== dateB) return dateB.localeCompare(dateA);
       return b.id - a.id;
     });
   },
-    ["recently-added-auction-lots-v2"],
+  ["recently-added-auction-lots-v2"],
   {
     revalidate: 300,
     tags: ["vin-recently-added"],
   }
 );
 
-
 export default async function RecentlyAdded() {
   const lots = await getRecentlyAdded();
-
   if (lots.length === 0) return null;
 
   return (
@@ -139,12 +109,7 @@ export default async function RecentlyAdded() {
           padding: "42px 24px 55px",
         }}
       >
-        <h2
-          style={{
-            fontSize: "28px",
-            margin: "0 0 10px",
-          }}
-        >
+        <h2 style={{ fontSize: "28px", margin: "0 0 10px" }}>
           Recently Added to Our Archive
         </h2>
 
@@ -164,8 +129,7 @@ export default async function RecentlyAdded() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns:
-              "repeat(auto-fit, minmax(250px, 1fr))",
+            gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
             gap: "14px",
           }}
         >
@@ -177,6 +141,8 @@ export default async function RecentlyAdded() {
             ]
               .filter(Boolean)
               .join(" ");
+
+            const lotUrl = `/lot/${lot.auction_source.toLowerCase()}/${lot.lot_number}`;
 
             return (
               <article
@@ -194,26 +160,17 @@ export default async function RecentlyAdded() {
                     marginBottom: "7px",
                   }}
                 >
-                  {lot.auction_source} ·
-                  Lot #{lot.lot_number}
+                  {lot.auction_source} · Lot #{lot.lot_number}
                 </div>
 
-                <h3
-                  style={{
-                    fontSize: "17px",
-                    margin: "0 0 12px",
-                  }}
-                >
-                  <Link
-                    href={`/lot/${lot.auction_source.toLowerCase()}/${lot.lot_number}`}
-                    style={{ color: "#171717" }}
-                  >
+                <h3 style={{ fontSize: "17px", margin: "0 0 12px" }}>
+                  <Link href={lotUrl} style={{ color: "#171717" }}>
                     {name || `VIN ${lot.vin}`}
                   </Link>
                 </h3>
 
                 <Link
-                  href={`/vin/${lot.vin}`}
+                  href={lotUrl}
                   style={{
                     color: "#555555",
                     fontSize: "13px",
@@ -227,30 +184,24 @@ export default async function RecentlyAdded() {
           })}
         </div>
       </div>
-      
-<div
-  style={{
-    marginTop: "26px",
-    textAlign: "center",
-  }}
->
-  <Link
-  href="/recently-added"
-  style={{
-      display: "inline-block",
-      padding: "12px 24px",
-      background: "#171717",
-      color: "#ffffff",
-      borderRadius: "8px",
-      fontSize: "14px",
-      fontWeight: 600,
-      textDecoration: "none",
-    }}
-  >
-    View All Recently Added →
-  </Link>
-</div>
 
+      <div style={{ marginTop: "26px", textAlign: "center" }}>
+        <Link
+          href="/recently-added"
+          style={{
+            display: "inline-block",
+            padding: "12px 24px",
+            background: "#171717",
+            color: "#ffffff",
+            borderRadius: "8px",
+            fontSize: "14px",
+            fontWeight: 600,
+            textDecoration: "none",
+          }}
+        >
+          View All Recently Added →
+        </Link>
+      </div>
     </section>
   );
 }

@@ -399,7 +399,7 @@ if (currentPage > 1 && (!lots || lots.length === 0)) {
                     <div>
                       VIN:{" "}
                       <Link
-                        href={`/vin/${lot.vin}`}
+                        href={lotUrl}
                         prefetch={false}
                         style={{
                           color: "#171717",

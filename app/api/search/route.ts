@@ -21,9 +21,12 @@ export async function GET(request: Request) {
 
   if (/^[A-HJ-NPR-Z0-9]{17}$/.test(query)) {
     const { data, error } = await supabase
-      .from("vehicles")
-      .select("vin")
+      .from("auction_lots")
+      .select("auction_source, lot_number")
       .eq("vin", query)
+      .order("auction_date", { ascending: false, nullsFirst: false })
+      .order("id", { ascending: false })
+      .limit(1)
       .maybeSingle();
 
     if (error) {
@@ -48,7 +51,7 @@ export async function GET(request: Request) {
     return NextResponse.json({
       found: true,
       type: "vin",
-      url: `/vin/${data.vin}`,
+      url: `/lot/${data.auction_source.toLowerCase()}/${data.lot_number}`,
     });
   }
 
