@@ -366,7 +366,7 @@ export async function generateMetadata({
   const { vehicle, lot } = record;
   const vehicleName = [vehicle.year, vehicle.make, displayModel(vehicle.model)]
     .filter(Boolean).join(" ");
-  const title = `${vehicleName} ${lot.vin} - ${lot.auction_source} Lot ${lot.lot_number}`;
+  const title = `${lot.vin} – ${vehicleName} Auction History`;
   const description = [
     `${vehicleName} auction record from ${lot.auction_source} lot ${lot.lot_number}.`,
     `VIN ${lot.vin}.`,
