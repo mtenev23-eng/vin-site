@@ -702,17 +702,18 @@ const vehicleOverview = [
     VIN
   </span>
 
-  <strong
-    style={{
-      fontSize: "40px",
-      lineHeight: 1.08,
-      color: "#171717",
-      letterSpacing: "0.8px",
-      fontWeight: "900",
-    }}
-  >
-    {vehicle.vin}
-  </strong>
+ <strong
+  className="lot-vin-number"
+  style={{
+    fontSize: "40px",
+    lineHeight: 1.08,
+    color: "#171717",
+    letterSpacing: "0.8px",
+    fontWeight: "900",
+  }}
+>
+  {vehicle.vin}
+</strong>
 </div>
     </div>
 
