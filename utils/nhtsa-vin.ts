@@ -6,6 +6,9 @@ export type VinSpecification = {
 };
 
 const fields: { key: string; label: string; suffix?: string }[] = [
+    { key: "BodyClass", label: "Body Style" },
+  { key: "TransmissionSpeeds", label: "Transmission Speeds" },
+    { key: "DisplacementL", label: "Engine Displacement", suffix: " L" },
   { key: "EngineCylinders", label: "Engine Cylinders" },
   { key: "EngineHP", label: "Horsepower", suffix: " hp" },
   { key: "EngineConfiguration", label: "Engine Configuration" },
@@ -35,12 +38,16 @@ const decodeVinCached = unstable_cache(
         { signal: AbortSignal.timeout(2500) }
       );
 
-      if (!response.ok) return [];
+     if (!response.ok) {
+  throw new Error(`NHTSA HTTP ${response.status}`);
+}
 
       const data = await response.json();
       const result = data?.Results?.[0];
 
-      if (!result) return [];
+    if (!result) {
+  throw new Error("NHTSA returned no decode result");
+}
 
       const specifications: VinSpecification[] = [];
 
@@ -50,7 +57,10 @@ const decodeVinCached = unstable_cache(
         if (valid(value)) {
           specifications.push({
             label: field.label,
-            value: `${value.trim()}${field.suffix ?? ""}`,
+           value:
+  field.key === "DisplacementL"
+    ? `${Number(value).toFixed(1)} L`
+    : `${value.trim()}${field.suffix ?? ""}`,
           });
         }
       }
@@ -69,15 +79,16 @@ const decodeVinCached = unstable_cache(
       }
 
       return specifications;
-    } catch (error) {
-      console.warn("NHTSA VIN decode unavailable:", {
-  vin,
-  reason: error instanceof Error ? error.message : String(error),
-});
-      return [];
-    }
+   } catch (error) {
+  console.warn("NHTSA VIN decode unavailable:", {
+    vin,
+    reason: error instanceof Error ? error.message : String(error),
+  });
+  throw error;
+}
+    
   },
-  ["nhtsa-vin-specifications-v1"],
+ ["nhtsa-vin-specifications-v2"],
   { revalidate: 2592000 }
 );
 
@@ -90,5 +101,9 @@ export async function getVinSpecifications(
     return [];
   }
 
-  return decodeVinCached(cleaned);
+ try {
+  return await decodeVinCached(cleaned);
+} catch {
+  return [];
+}
 }
