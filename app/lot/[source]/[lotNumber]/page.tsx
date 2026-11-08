@@ -297,9 +297,7 @@ const getCachedComparableStats = unstable_cache(
     vin: string,
     currentLotId: number
   ): Promise<ComparableStats | null> => {
-    const { data, error } = await supabase.rpc(
-      "get_vin_comparable_stats_v2",
-      {
+    const { data, error } = await supabase.rpc("get_vin_comparable_stats_v5", {
         p_vin: vin,
         p_exclude_auction_id: currentLotId,
       }
@@ -331,7 +329,7 @@ const getCachedComparableStats = unstable_cache(
       maxYear: row.max_year ?? null,
     };
   },
-  ["vin-comparable-stats-v2"],
+ ["vin-comparable-stats-v5"],
   {
     revalidate: 86400,
     tags: ["vin-comparable-auctions"],
@@ -1205,8 +1203,22 @@ borderRadius: "10px",
       lineHeight: 1.75,
     }}
   >
-    {vehicleOverview}
+      {vehicleOverview}
   </p>
+
+  {marketComparison && (
+    <p
+      style={{
+        margin: "14px 0 0",
+        maxWidth: "1000px",
+        color: "#444",
+        fontSize: "15px",
+        lineHeight: 1.75,
+      }}
+    >
+      {marketComparison}
+    </p>
+  )}
 </section>
 {/* VEHICLE & AUCTION DETAILS */}
 {latestLot && (
