@@ -98,7 +98,7 @@ const getCachedSimilarLots = unstable_cache(
 
     return data || [];
   },
-  ["vin-similar-lots-v3-full"],
+ ["vin-similar-lots-v3-improved"],
   {
     revalidate: 86400,
     tags: ["vin-similar-lots"],
