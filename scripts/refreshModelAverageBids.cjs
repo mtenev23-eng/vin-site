@@ -250,6 +250,41 @@ const SUPPORTED_MAKES = {
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+async function getAverageBidWithRetry(job) {
+  const maxAttempts = 3;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const { data, error } = await supabase.rpc(
+        "get_model_recent_average_bid",
+        {
+          p_make: job.make,
+          p_models: job.rawModels,
+        }
+      );
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      const message = String(error.message || "");
+      const isTimeout =
+        error.code === "57014" ||
+        /statement timeout|upstream timeout/i.test(message);
+
+      if (!isTimeout || attempt === maxAttempts) {
+        throw error;
+      }
+
+      console.warn(
+        `Timeout for ${job.makeSlug}/${job.slug}. ` +
+        `Retrying (${attempt}/${maxAttempts - 1})...`
+      );
+
+      await sleep(2000 * attempt);
+    }
+  }
+}
+
 async function main() {
   const args = process.argv.slice(2);
   const limitArg = args.find((arg) => arg.startsWith("--limit="));
@@ -297,15 +332,9 @@ const cachedKeys = new Set(
 
  for (const job of jobs.slice(0, limit)) {
     try {
-      const { data, error } = await supabase.rpc(
-        "get_model_recent_average_bid",
-        {
-          p_make: job.make,
-          p_models: job.rawModels,
-        }
-      );
+      
+const data = await getAverageBidWithRetry(job);
 
-      if (error) throw error;
 
       const { error: writeError } = await supabase
         .from("model_average_bid_cache")
